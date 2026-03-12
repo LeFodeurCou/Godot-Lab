@@ -8,6 +8,8 @@ var cell_scale := 20
 var offset
 
 func _ready():
+	max_heat = 0
+	cells.clear()
 
 	var seedHandler = SeedHandler.new(originSeed)
 	var config = ProceduralGeneratorConfig.new(seedHandler)
@@ -29,20 +31,20 @@ func _draw():
 	
 	for cell in cells:
 
-		var p = offset + Vector2(cell.position) * cell_scale
+		var p = offset + Vector2(cell.x, cell.y) * cell_scale
 
-		for dir in cell.sockets.keys():
-
-			var neighbor = cell.sockets[dir]
+		for neighbor in cell.sockets:
 
 			if neighbor != null and neighbor.heat > cell.heat:
 
-				var p2 = offset + Vector2(neighbor.position) * cell_scale
+				var p2 = offset + Vector2(neighbor.x, neighbor.y) * cell_scale
 				draw_line(p, p2, Color.GREEN, 2)
 				
 	for cell in cells:
-		var p = offset + Vector2(cell.position) * cell_scale
-		var t = float(cell.heat) / max_heat # heat ratio
+		var p = offset + Vector2(cell.x, cell.y) * cell_scale
+		var t = 0.0
+		if max_heat > 0:
+			t = float(cell.heat) / max_heat # heat ratio
 		var r = lerp(3.0, 6.0, t) # Cell size depending on the heat
 		if cell.heat == 0:
 			draw_circle(p, r, Color.WHITE) # Start point
@@ -50,7 +52,7 @@ func _draw():
 			var color = Color(t, 0, 1.0 - t) # blue to red from heat = 0 to max heat
 			draw_circle(p, r, color)
 	for cell in cells:
-		var p = offset + Vector2(cell.position) * cell_scale
+		var p = offset + Vector2(cell.x, cell.y) * cell_scale
 		draw_string(
 			ThemeDB.fallback_font,
 			p + Vector2(6,-6),

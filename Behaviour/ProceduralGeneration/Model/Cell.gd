@@ -2,19 +2,19 @@ extends Object
 
 class_name Cell
 
-var position: Vector2i
-var sockets:= {}
+var x: int
+var y: int
+var sockets = [null, null, null, null]
 # TODO add a strong typing variable to define if it's room, corridor, big room etc.
-var direction: Vector2i = Vector2i.ZERO
+var direction: int = -1
 var heat: int = -1
 
-func _init(pos: Vector2i):
-	position = pos
-	for dir in Directions.Cardinal:
-		sockets[dir] = null
+func _init(px: int, py: int):
+	x = px
+	y = py
 
-func connectToCell(cell: Cell, dir: Vector2i) -> void:
+func connectToCell(cell: Cell, dir: int) -> void:
 	assert(cell != self)
 	
 	sockets[dir] = cell
-	cell.sockets[Directions.Opposite[dir]] = self
+	cell.sockets[Directions.OPP[dir]] = self

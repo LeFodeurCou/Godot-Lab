@@ -5,28 +5,38 @@ class_name ProceduralGenerator
 var deadEndPruneCoefficient = 0.05 # TODO Need to make a pruneDeadEnd engine if a cell neighbors = 1
 
 var grid: Array
+var gridWidth : int
 var cells: Array = []
 var frontier: Array = []
 var config: ProceduralGeneratorConfig
 var rng: RandomGenerator
+#var roomCounts = {}
 
 func _init(inputConfig: ProceduralGeneratorConfig):
 	config = inputConfig
 	rng = config.seedHandler.dungeonRng.call(config.id)
 
 func create() -> Array:
-	grid = createGrid(config.cellNumber)
-	var startCell = Cell.new(Vector2i(config.cellNumber, config.cellNumber))
+	cells.clear()
+	frontier.clear()
+	#roomCounts.clear()
+
+	#for size in config.roomCoefficient.keys():
+		#roomCounts[size] = 0
 	
+	gridWidth = config.cellNumber * 2 + 1
+	grid = createGrid()
+	var startCell = Cell.new(config.cellNumber, config.cellNumber)
+	
+	
+	grid[config.cellNumber + config.cellNumber * gridWidth] = cells.size()
 	cells.append(startCell)
 	frontier.append(startCell)
-	grid[config.cellNumber][config.cellNumber] = startCell
 	
 	var base
-	var corridorCoefficient = 0.6
 	
 	while cells.size() < config.cellNumber:
-		if rng.randf() < corridorCoefficient:
+		if rng.randf() < config.corridorCoefficient:
 			base = frontier.back()
 		else:
 			base = rng.pickRandom(frontier)
@@ -37,75 +47,82 @@ func create() -> Array:
 	recomputeHeat(startCell)
 	return cells;
 	
-func createGrid(size: int) -> Array:
+func createGrid() -> Array:
 	grid = []
-	
-	for x in range(size * 2 + 1):
-		grid.append([])
-		for y in range(size * 2 + 1):
-			grid[x].append(null)
-	
+	grid.resize(gridWidth * gridWidth)
 	return grid
-	
+
 func placeNeighborCell(currentCell: Cell) -> void:
-	var directions = Directions.Cardinal.duplicate()
-	rng.shuffle(directions)
-	if currentCell.direction != Vector2i.ZERO && rng.randf() < config.directionMomentum:
-		directions.erase(currentCell.direction)
-		directions.push_front(currentCell.direction)
-	for dir in directions:
-		var newPos = currentCell.position + dir
-		if grid[newPos.x][newPos.y] == null and (not config.isStrictMaze or countNeighbors(newPos) <=1):
+	var shuffledDirections = rng.shuffle([
+		Directions.DIR_UP,
+		Directions.DIR_RIGHT,
+		Directions.DIR_DOWN,
+		Directions.DIR_LEFT
+	])
+	if currentCell.direction != -1 && rng.randf() < config.directionMomentum:
+		shuffledDirections.erase(currentCell.direction)
+		shuffledDirections.push_front(currentCell.direction)
+	for dir in shuffledDirections:
+		var px = currentCell.x + Directions.DIR_X[dir]
+		var py = currentCell.y + Directions.DIR_Y[dir]
+		var gridI = px + py * gridWidth
+		if grid[gridI] == null and (not config.isStrictMaze or countNeighbors(px, py) <=1):
 			frontierDecayRandomizer()
-			var newCell = Cell.new(newPos)
+			var newCell = Cell.new(px, py)
 			newCell.direction = dir
+			grid[gridI] = cells.size()
 			cells.append(newCell)
 			frontier.append(newCell)
-			grid[newPos.x][newPos.y] = newCell
 			currentCell.connectToCell(newCell, dir)
 			return
 	frontier.erase(currentCell)
 
-func countNeighbors(pos: Vector2i) -> int:
-
+func countNeighbors(x: int, y: int) -> int:
 	var count = 0
-	for d in Directions.Cardinal:
-		var p = pos + d
-		if grid[p.x][p.y] != null:
+	for dir in 4:
+		var px = x + Directions.DIR_X[dir]
+		var py = y + Directions.DIR_Y[dir]
+		if grid[px + py * gridWidth] != null:
 			count += 1
 	return count
 	
 func frontierDecayRandomizer() -> void:
-	if frontier.size() > 1 and rng.randf() < config.frontierDecay:
-		frontier.erase(rng.pickRandom(frontier))
+	var frontierSize = frontier.size()
+	if frontierSize > 1 and rng.randf() < config.frontierDecay:
+		var i = rng.randi(0, frontierSize - 1)
+		var last = frontierSize - 1
+		frontier[i] = frontier[last]
+		frontier.pop_back()
 
 func socketRandomConnecter() -> void:
 	if 0 >= config.loopChance:
 		return;
 	for i in range(cells.size()):
 		var cell = cells[i]
-		for dir in Directions.Cardinal:
+		for dir in 4:
 			# Avoid double check
-			if !config.canLoopDoubleCheck and (dir == Vector2i.LEFT or dir == Vector2i.UP):
+			if !config.canLoopDoubleCheck and (dir == Directions.DIR_LEFT or dir == Directions.DIR_RIGHT):
 				continue
 			if cell.sockets[dir]:
 				continue
 			if rng.randf() >= config.loopChance:
 				continue
-			var p = cell.position + dir
-			var neighbor = grid[p.x][p.y]
-			if null != neighbor:
-				cell.connectToCell(neighbor, dir)
+			var px = cell.x + Directions.DIR_X[dir]
+			var py = cell.y + Directions.DIR_Y[dir]
+			var neighborIndex = grid[px + py * gridWidth]
+			if null != neighborIndex:
+				cell.connectToCell(cells[neighborIndex], dir)
 			
 func canPlaceRoom(center: Cell, size: int) -> bool:
 	var half = int(size / 2.0)
 	var neighborCount = 0
 	for x in range(-half, half + 1):
 		for y in range(-half, half + 1):
-			var p = center.position + Vector2i(x, y)
-			if 0 > p.x or p.x >= grid.size() or 0 > p.y or p.y >= grid.size():
+			var px = center.x + x
+			var py = center.y + y
+			if 0 > px or px >= gridWidth or 0 > py or py >= gridWidth:
 				return false
-			if grid[p.x][p.y] != null:
+			if grid[px + py * gridWidth] != null:
 				neighborCount += 1
 				if size < neighborCount:
 					return false
@@ -115,25 +132,27 @@ func carveRoom(center: Cell, size: int):
 	var half = int(size / 2.0)
 	for x in range(-half, half + 1):
 		for y in range(-half, half + 1):
-			var nx = center.position.x + x
-			var ny = center.position.y + y
+			var nx = center.x + x
+			var ny = center.y + y
 			var cell
-			if (grid[nx][ny]):
-				cell = grid[nx][ny]
+			var gridI = nx + ny * gridWidth
+			if (grid[gridI]):
+				cell = cells[grid[gridI]]
 			else:
-				cell = Cell.new(Vector2i(nx, ny))
+				cell = Cell.new(nx, ny)
+				grid[gridI] = cells.size()
 				cells.append(cell)
-				grid[nx][ny] = cell
-			for dir in Directions.Cardinal:
-				var p = cell.position + dir
-				var neighbor = grid[p.x][p.y]
-				if neighbor != null && insideRoom(center, neighbor.position, half):
-					cell.connectToCell(neighbor, dir)
+			for dir in 4:
+				var px = cell.x + Directions.DIR_X[dir]
+				var py = cell.y + Directions.DIR_Y[dir]
+				var neighborIndex = grid[px + py * gridWidth]
+				if neighborIndex != null && insideRoom(center, px, py, half):
+					cell.connectToCell(cells[neighborIndex], dir)
 
-func insideRoom(center, pos, half):
+func insideRoom(center, x, y, half):
 	return (
-		abs(pos.x - center.position.x) <= half
-		and abs(pos.y - center.position.y) <= half
+		abs(x - center.x) <= half
+		and abs(y - center.y) <= half
 	)
 
 func expandRooms():
@@ -148,21 +167,24 @@ func expandRooms():
 			order.append(i)
 		rng.shuffle(order)
 		
-		#var baseCells = rng.shuffle(cells) # TODO make a bias by heat here may be ? OR in the config
 		for idx in order:
 			var cell = cells[idx]
-			if created >= maxRooms:
+			if created >= maxRooms: # TODO make a bias by heat here may be ? OR in the config
 				break
 			if canPlaceRoom(cell, size):
 				carveRoom(cell, size)
 				created += 1
 
 func recomputeHeat(start: Cell):
-	var queue = [start]
 	start.heat = 0
-	while queue.size() > 0:
-		var current = queue.pop_front()
-		for neighbor in current.sockets.values():
+	var queue = []
+	queue.resize(cells.size())
+	var qi = 0
+	queue.append(start)
+	while qi < queue.size():
+		var current = queue[qi]
+		qi += 1
+		for neighbor in current.sockets:
 			if neighbor == null:
 				continue
 			if neighbor.heat != -1:

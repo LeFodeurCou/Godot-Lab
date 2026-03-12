@@ -2,16 +2,12 @@ extends Object
 
 class_name Directions
 
-const NORTH = Vector2i.UP
-const SOUTH = Vector2i.DOWN
-const EAST  = Vector2i.RIGHT
-const WEST  = Vector2i.LEFT
+const DIR_UP = 0
+const DIR_RIGHT = 1
+const DIR_DOWN = 2
+const DIR_LEFT = 3
 
-const Cardinal = [NORTH, SOUTH, EAST, WEST]
+const DIR_X = [0, 1, 0, -1]
+const DIR_Y = [-1, 0, 1, 0]
 
-const Opposite = {
-	NORTH: SOUTH,
-	SOUTH: NORTH,
-	EAST: WEST,
-	WEST: EAST
-}
+const OPP = [2, 3, 0, 1]

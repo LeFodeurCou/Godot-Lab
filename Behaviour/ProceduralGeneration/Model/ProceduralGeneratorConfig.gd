@@ -10,6 +10,7 @@ var cellNumber = 150
 var isStrictMaze = true
 var frontierDecay = 0.1
 var directionMomentum = 0.7
+var corridorCoefficient = 0.6
 
 # Second phase variables
 
