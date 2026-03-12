@@ -28,7 +28,6 @@ func create() -> Array:
 	grid = createGrid()
 	var startCell = Cell.new(config.cellNumber, config.cellNumber)
 	
-	
 	grid[config.cellNumber + config.cellNumber * gridWidth] = cells.size()
 	cells.append(startCell)
 	frontier.append(startCell)
@@ -39,7 +38,7 @@ func create() -> Array:
 		if rng.randf() < config.corridorCoefficient:
 			base = frontier.back()
 		else:
-			base = rng.pickRandom(frontier)
+			base = frontier[rng.randi(0, frontier.size() - 1)]
 		if(!placeRoomIfPossible(base)):
 			placeNeighborCell(base)
 	socketRandomConnecter()
@@ -54,6 +53,8 @@ func createGrid() -> Array:
 
 func placeRoomIfPossible(currentCell: Cell) -> bool:
 	for size in config.roomCoefficient.keys():
+		if cells.size() + size * size > config.cellNumber:
+			continue
 		var coef = config.roomCoefficient[size][0]
 		var maxRooms = config.roomCoefficient[size][1]
 		if roomCounts[size] >= maxRooms:
@@ -107,20 +108,17 @@ func carveRoomXY(cx:int, cy:int, size:int):
 					var ngi = px + py * gridWidth
 					if grid[ngi] != null && insideRoom(centerCell, px, py, half):
 						cell.connectToCell(cells[grid[ngi]], dir)
-					if abs(x) == half or abs(y) == half:
-						frontier.append(cell)
+			if abs(x) == half or abs(y) == half:
+				frontier.append(cell)
 
 func placeNeighborCell(currentCell: Cell) -> void:
-	var shuffledDirections = rng.shuffle([
-		Directions.DIR_UP,
-		Directions.DIR_RIGHT,
-		Directions.DIR_DOWN,
-		Directions.DIR_LEFT
-	])
-	if currentCell.direction != -1 && rng.randf() < config.directionMomentum:
-		shuffledDirections.erase(currentCell.direction)
-		shuffledDirections.push_front(currentCell.direction)
-	for dir in shuffledDirections:
+	var startDir = rng.randi(0, 3)
+	for i in 4:
+		var dir = (startDir + i) & 3
+		if currentCell.direction != -1 \
+		and i == 0 \
+		and rng.randf() < config.directionMomentum:
+			dir = currentCell.direction
 		var px = currentCell.x + Directions.DIR_X[dir]
 		var py = currentCell.y + Directions.DIR_Y[dir]
 		var gridI = px + py * gridWidth
