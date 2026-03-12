@@ -14,7 +14,7 @@ func _ready():
 	var seedHandler = SeedHandler.new(originSeed)
 	var config = ProceduralGeneratorConfig.new(seedHandler)
 	var generator := ProceduralGenerator.new(config)
-	offset = Vector2(-config.cellNumber, -config.cellNumber) * cell_scale + Vector2(500,500)
+	offset = Vector2(-config.cellNumber, -config.cellNumber) * cell_scale + Vector2(500,350)
 
 	cells = generator.create()
 

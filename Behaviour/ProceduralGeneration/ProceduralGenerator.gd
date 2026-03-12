@@ -10,7 +10,7 @@ var cells: Array = []
 var frontier: Array = []
 var config: ProceduralGeneratorConfig
 var rng: RandomGenerator
-#var roomCounts = {}
+var roomCounts = {}
 
 func _init(inputConfig: ProceduralGeneratorConfig):
 	config = inputConfig
@@ -19,10 +19,10 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 func create() -> Array:
 	cells.clear()
 	frontier.clear()
-	#roomCounts.clear()
+	roomCounts.clear()
 
-	#for size in config.roomCoefficient.keys():
-		#roomCounts[size] = 0
+	for size in config.roomCoefficient.keys():
+		roomCounts[size] = 0
 	
 	gridWidth = config.cellNumber * 2 + 1
 	grid = createGrid()
@@ -40,9 +40,9 @@ func create() -> Array:
 			base = frontier.back()
 		else:
 			base = rng.pickRandom(frontier)
-		placeNeighborCell(base)
+		if(!placeRoomIfPossible(base)):
+			placeNeighborCell(base)
 	socketRandomConnecter()
-	expandRooms()
 	
 	recomputeHeat(startCell)
 	return cells;
@@ -51,6 +51,64 @@ func createGrid() -> Array:
 	grid = []
 	grid.resize(gridWidth * gridWidth)
 	return grid
+
+func placeRoomIfPossible(currentCell: Cell) -> bool:
+	for size in config.roomCoefficient.keys():
+		var coef = config.roomCoefficient[size][0]
+		var maxRooms = config.roomCoefficient[size][1]
+		if roomCounts[size] >= maxRooms:
+			continue
+		if rng.randf() > coef:
+			continue
+		if canPlaceRoomXY(currentCell.x, currentCell.y, size):
+			carveRoomXY(currentCell.x, currentCell.y, size)
+			roomCounts[size] += 1
+			return true
+	return false
+
+func canPlaceRoomXY(cx:int, cy:int, size:int) -> bool:
+	var half = int(size / 2.0)
+	var neighborCount = 0
+	for x in range(-half, half + 1):
+		for y in range(-half, half + 1):
+			var px = cx + x
+			var py = cy + y
+			if px < 0 or py < 0 or px >= gridWidth or py >= gridWidth:
+				return false
+			var gridI = px + py * gridWidth
+			if grid[gridI] != null:
+				neighborCount += 1
+				# if less than size - 1 only the first cell become a room
+				# size - 1 to avoid room collapsing
+				if neighborCount > size - 1:
+					return false
+	return true
+	
+func carveRoomXY(cx:int, cy:int, size:int):
+	var half = int(size / 2.0)
+	var centerCell = cells[grid[cx + cy * gridWidth]]
+	for x in range(-half, half + 1):
+		for y in range(-half, half + 1):
+			var nx = cx + x
+			var ny = cy + y
+			var gi = nx + ny * gridWidth
+			var cell
+			if grid[gi] != null:
+				cell = cells[grid[gi]]
+			else:
+				cell = Cell.new(nx, ny)
+				grid[gi] = cells.size()
+				cells.append(cell)
+			# connect internal neighbors
+			for dir in 4:
+				var px = cell.x + Directions.DIR_X[dir]
+				var py = cell.y + Directions.DIR_Y[dir]
+				if abs(px - cx) <= half and abs(py - cy) <= half:
+					var ngi = px + py * gridWidth
+					if grid[ngi] != null && insideRoom(centerCell, px, py, half):
+						cell.connectToCell(cells[grid[ngi]], dir)
+					if abs(x) == half or abs(y) == half:
+						frontier.append(cell)
 
 func placeNeighborCell(currentCell: Cell) -> void:
 	var shuffledDirections = rng.shuffle([
@@ -112,42 +170,6 @@ func socketRandomConnecter() -> void:
 			var neighborIndex = grid[px + py * gridWidth]
 			if null != neighborIndex:
 				cell.connectToCell(cells[neighborIndex], dir)
-			
-func canPlaceRoom(center: Cell, size: int) -> bool:
-	var half = int(size / 2.0)
-	var neighborCount = 0
-	for x in range(-half, half + 1):
-		for y in range(-half, half + 1):
-			var px = center.x + x
-			var py = center.y + y
-			if 0 > px or px >= gridWidth or 0 > py or py >= gridWidth:
-				return false
-			if grid[px + py * gridWidth] != null:
-				neighborCount += 1
-				if size < neighborCount:
-					return false
-	return true
-	
-func carveRoom(center: Cell, size: int):
-	var half = int(size / 2.0)
-	for x in range(-half, half + 1):
-		for y in range(-half, half + 1):
-			var nx = center.x + x
-			var ny = center.y + y
-			var cell
-			var gridI = nx + ny * gridWidth
-			if (grid[gridI]):
-				cell = cells[grid[gridI]]
-			else:
-				cell = Cell.new(nx, ny)
-				grid[gridI] = cells.size()
-				cells.append(cell)
-			for dir in 4:
-				var px = cell.x + Directions.DIR_X[dir]
-				var py = cell.y + Directions.DIR_Y[dir]
-				var neighborIndex = grid[px + py * gridWidth]
-				if neighborIndex != null && insideRoom(center, px, py, half):
-					cell.connectToCell(cells[neighborIndex], dir)
 
 func insideRoom(center, x, y, half):
 	return (
@@ -155,30 +177,9 @@ func insideRoom(center, x, y, half):
 		and abs(y - center.y) <= half
 	)
 
-func expandRooms():
-	for size in config.roomCoefficient.keys():
-		var coef = config.roomCoefficient[size][0] # TODO use it
-		var maxRooms = config.roomCoefficient[size][1]
-		var created = 0
-		
-		# index shuffling insted graph shuffling int < Cell in memory :)
-		var order = []
-		for i in cells.size():
-			order.append(i)
-		rng.shuffle(order)
-		
-		for idx in order:
-			var cell = cells[idx]
-			if created >= maxRooms: # TODO make a bias by heat here may be ? OR in the config
-				break
-			if canPlaceRoom(cell, size):
-				carveRoom(cell, size)
-				created += 1
-
 func recomputeHeat(start: Cell):
 	start.heat = 0
 	var queue = []
-	queue.resize(cells.size())
 	var qi = 0
 	queue.append(start)
 	while qi < queue.size():
