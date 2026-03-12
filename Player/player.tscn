@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://iux8qu588cf8"]
+
+[ext_resource type="PackedScene" uid="uid://d0ypm0v45pwdv" path="res://art/player.glb" id="1_4flbx"]
+[ext_resource type="Script" uid="uid://ci8y6rim3vfcq" path="res://Player/player.gd" id="1_onrkg"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_4flbx"]
+radius = 0.8
+
+[node name="Player" type="CharacterBody3D" unique_id=1691673903]
+collision_mask = 6
+script = ExtResource("1_onrkg")
+
+[node name="Pivot" type="Node3D" parent="." unique_id=361301021]
+
+[node name="Character" parent="Pivot" unique_id=1406915616 instance=ExtResource("1_4flbx")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=604829403]
+shape = SubResource("SphereShape3D_4flbx")
+
+[node name="CameraPivot" type="Marker3D" parent="." unique_id=1179431997]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.7071067, 0, -0.7071067, 0.70710677, 0, 20, 20)
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot" unique_id=1948342054]

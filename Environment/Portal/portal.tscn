@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://c3fwk16yhuakh"]
+
+[ext_resource type="Script" uid="uid://vc85pgd103gl" path="res://Environment/Portal/Portal.gd" id="1_ax12f"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_0r486"]
+size = Vector3(3.5, 5, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0r486"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gci8f"]
+size = Vector3(3.5, 5, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0r486"]
+size = Vector3(3.5, 5, 0.5)
+
+[node name="Portal" type="Node3D" unique_id=874380624]
+script = ExtResource("1_ax12f")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=941057065]
+collision_layer = 4
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=50231120]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+layers = 4
+mesh = SubResource("BoxMesh_0r486")
+surface_material_override/0 = SubResource("StandardMaterial3D_0r486")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1746293431]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+shape = SubResource("BoxShape3D_gci8f")
+debug_color = Color(0.7411765, 0.19215687, 0, 1)
+
+[node name="Area3D" type="Area3D" parent="StaticBody3D" unique_id=2002545941]
+collision_layer = 4
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D/Area3D" unique_id=1647912928]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 2, 0)
+shape = SubResource("BoxShape3D_0r486")
+debug_color = Color(0.7411765, 0.19215687, 0, 1)
+
+[connection signal="body_entered" from="StaticBody3D/Area3D" to="StaticBody3D/Area3D" method="_on_body_entered"]
