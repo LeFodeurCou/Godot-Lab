@@ -6,7 +6,7 @@ var position: Vector2i
 var sockets:= {}
 # TODO add a strong typing variable to define if it's room, corridor, big room etc.
 var direction: Vector2i = Vector2i.ZERO
-var heat: int = 0
+var heat: int = -1
 
 func _init(pos: Vector2i):
 	position = pos

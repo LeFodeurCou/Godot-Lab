@@ -158,8 +158,6 @@ func expandRooms():
 				created += 1
 
 func recomputeHeat(start: Cell):
-	for c in cells:
-		c.heat = -1
 	var queue = [start]
 	start.heat = 0
 	while queue.size() > 0:
