@@ -34,30 +34,27 @@ func create() -> Array:
 	cells.append(startCell)
 	
 	# First phase : graph generation
-	var base
+	var frontierIndex
 	while cells.size() < config.cellNumber:
 		if rng.randf() < config.corridorCoefficient:
 			# Take the last frontier cell
-			base = cells[frontier[frontier.size() - 1]]
+			frontierIndex = frontier.size() - 1
 		else:
 			# Take a random frontier cell
-			base = cells[frontier[rng.randi(0, frontier.size() - 1)]]
-		if(!placeRoomIfPossible(base)):
-			placeNeighborCell(base)
+			frontierIndex = rng.randi(0, frontier.size() - 1)
+		if(!placeRoomIfPossible(frontierIndex)):
+			placeNeighborCell(frontierIndex)
 
 	# Second phase : optional loops and heat computation
 	socketRandomConnecter()	
 	recomputeHeat(startCell)
 	
 	return cells;
-	
-func createGrid() -> Array:
-	grid = []
-	grid.resize(gridWidth * gridWidth)
-	return grid
 
-func placeRoomIfPossible(currentCell: Cell) -> bool:
+func placeRoomIfPossible(cellIndex: int) -> bool:
+	var cell = cells[frontier[cellIndex]]
 	for size in config.roomCoefficient.keys():
+		# Avoid overshooting the max cell number
 		if cells.size() + size * size > config.cellNumber:
 			continue
 		var coef = config.roomCoefficient[size][0]
@@ -66,8 +63,8 @@ func placeRoomIfPossible(currentCell: Cell) -> bool:
 			continue
 		if rng.randf() > coef:
 			continue
-		if canPlaceRoomXY(currentCell.x, currentCell.y, size):
-			carveRoomXY(currentCell.x, currentCell.y, size)
+		if canPlaceRoomXY(cell.x, cell.y, size):
+			carveRoomXY(cell.x, cell.y, size)
 			roomCounts[size] += 1
 			return true
 	return false
@@ -79,6 +76,7 @@ func canPlaceRoomXY(cx:int, cy:int, size:int) -> bool:
 		for y in range(-half, half + 1):
 			var px = cx + x
 			var py = cy + y
+			# Position not in the grid capacity
 			if px < 0 or py < 0 or px >= gridWidth or py >= gridWidth:
 				return false
 			var gridI = px + py * gridWidth
@@ -107,7 +105,7 @@ func carveRoomXY(cx:int, cy:int, size:int):
 				if abs(x) == half or abs(y) == half:
 					frontier.append(cells.size())
 				cells.append(cell)
-			# connect internal neighbors
+			# Connect internal neighbors
 			for dir in 4:
 				var px = cell.x + Directions.DIR_X[dir]
 				var py = cell.y + Directions.DIR_Y[dir]
@@ -116,14 +114,16 @@ func carveRoomXY(cx:int, cy:int, size:int):
 					if grid[ngi] != null && insideRoom(centerCell, px, py, half):
 						cell.connectToCell(cells[grid[ngi]], dir)
 
-func placeNeighborCell(currentCell: Cell) -> void:
+func placeNeighborCell(cellIndex: int) -> void:
+	var cell = cells[frontier[cellIndex]]
+	# O(1) Cyclic direction to avoid a O(n) shuffle
 	var startDir = rng.randi(0, 3)
 	for i in 4:
 		var dir = (startDir + i) & 3
-		if currentCell.direction != -1 and i == 0 and rng.randf() < config.directionMomentum:
-			dir = currentCell.direction
-		var px = currentCell.x + Directions.DIR_X[dir]
-		var py = currentCell.y + Directions.DIR_Y[dir]
+		if cell.direction != -1 and i == 0 and rng.randf() < config.directionMomentum:
+			dir = cell.direction
+		var px = cell.x + Directions.DIR_X[dir]
+		var py = cell.y + Directions.DIR_Y[dir]
 		var gridI = px + py * gridWidth
 		if grid[gridI] == null and (not config.isStrictMaze or countNeighbors(px, py) <= 1):
 			frontierDecayRandomizer()
@@ -132,9 +132,9 @@ func placeNeighborCell(currentCell: Cell) -> void:
 			grid[gridI] = cells.size()
 			frontier.append(cells.size())
 			cells.append(newCell)
-			currentCell.connectToCell(newCell, dir)
+			cell.connectToCell(newCell, dir)
 			return
-	frontier.erase(currentCell) # TODO make an optimization here to avoid erase if possible
+	frontierRemove(cellIndex)
 
 func countNeighbors(x: int, y: int) -> int:
 	var count = 0
@@ -148,10 +148,15 @@ func countNeighbors(x: int, y: int) -> int:
 func frontierDecayRandomizer() -> void:
 	var frontierSize = frontier.size()
 	if frontierSize > 1 and rng.randf() < config.frontierDecay:
-		var i = rng.randi(0, frontierSize - 1)
-		var last = frontierSize - 1
-		frontier[i] = frontier[last]
-		frontier.pop_back()
+		frontierRemove(
+			rng.randi(0, frontierSize - 1)
+		)
+
+func frontierRemove(i):
+	# Swap remove O(1) instead of .erase() O(n)
+	var last = frontier.size() - 1
+	frontier[i] = frontier[last]
+	frontier.pop_back()
 
 func socketRandomConnecter() -> void:
 	if 0 >= config.loopChance:
@@ -193,3 +198,6 @@ func recomputeHeat(start: Cell):
 				continue
 			neighbor.heat = current.heat + 1
 			queue.append(neighbor)
+			
+func key(x:int, y:int) -> int:
+	return (x << 32) | (y & 0xffffffff)
