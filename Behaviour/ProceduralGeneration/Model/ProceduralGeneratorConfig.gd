@@ -11,16 +11,15 @@ var isStrictMaze = true
 var frontierDecay = 0.1
 var directionMomentum = 0.7
 var corridorCoefficient = 0.6
+var roomCoefficient = { #size: [coefficient, maxNumber]
+	3: [0.3, 6, 0.2],
+	5: [0.1, 1, 0.9]
+} # 0.05 of cells can become a room candidate
 
 # Second phase variables
 
 var loopChance = 0.05
 var canLoopDoubleCheck = false # false is more optimized but lead to less loop
-var roomCoefficient = { #size: [coefficient, maxNumber]
-	3: [0.3, 4],
-	5: [0.1, 1]
-} # 0.05 of cells can become a room candidate TODO Need to be used in a roomExpansion
-var deadEndPruneCoefficient = 0.05 # TODO Need to make a pruneDeadEnd engine if a cell neighbors = 1
 
 func _init(seedHandlerInput: SeedHandler):
 	seedHandler = seedHandlerInput

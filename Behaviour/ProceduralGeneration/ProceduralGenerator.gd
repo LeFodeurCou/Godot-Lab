@@ -2,8 +2,6 @@ extends Object
 
 class_name ProceduralGenerator
 
-var deadEndPruneCoefficient = 0.05 # TODO Need to make a pruneDeadEnd engine if a cell neighbors = 1
-
 var grid: Array
 var gridWidth : int
 var cells: Array = []
@@ -13,37 +11,44 @@ var rng: RandomGenerator
 var roomCounts = {}
 
 func _init(inputConfig: ProceduralGeneratorConfig):
-	config = inputConfig
-	rng = config.seedHandler.dungeonRng.call(config.id)
-
-func create() -> Array:
 	cells.clear()
 	frontier.clear()
 	roomCounts.clear()
-
+	
+	config = inputConfig
+	rng = config.seedHandler.dungeonRng.call(config.id)
+	
 	for size in config.roomCoefficient.keys():
 		roomCounts[size] = 0
 	
 	gridWidth = config.cellNumber * 2 + 1
-	grid = createGrid()
+	# Grid initialization
+	grid = []
+	grid.resize(gridWidth * gridWidth)
+
+func create() -> Array:
+	# First cell generation and placement
 	var startCell = Cell.new(config.cellNumber, config.cellNumber)
-	
 	grid[config.cellNumber + config.cellNumber * gridWidth] = cells.size()
+	frontier.append(cells.size())
 	cells.append(startCell)
-	frontier.append(startCell)
 	
+	# First phase : graph generation
 	var base
-	
 	while cells.size() < config.cellNumber:
 		if rng.randf() < config.corridorCoefficient:
-			base = frontier.back()
+			# Take the last frontier cell
+			base = cells[frontier[frontier.size() - 1]]
 		else:
-			base = frontier[rng.randi(0, frontier.size() - 1)]
+			# Take a random frontier cell
+			base = cells[frontier[rng.randi(0, frontier.size() - 1)]]
 		if(!placeRoomIfPossible(base)):
 			placeNeighborCell(base)
-	socketRandomConnecter()
-	
+
+	# Second phase : optional loops and heat computation
+	socketRandomConnecter()	
 	recomputeHeat(startCell)
+	
 	return cells;
 	
 func createGrid() -> Array:
@@ -99,6 +104,8 @@ func carveRoomXY(cx:int, cy:int, size:int):
 			else:
 				cell = Cell.new(nx, ny)
 				grid[gi] = cells.size()
+				if abs(x) == half or abs(y) == half:
+					frontier.append(cells.size())
 				cells.append(cell)
 			# connect internal neighbors
 			for dir in 4:
@@ -108,30 +115,26 @@ func carveRoomXY(cx:int, cy:int, size:int):
 					var ngi = px + py * gridWidth
 					if grid[ngi] != null && insideRoom(centerCell, px, py, half):
 						cell.connectToCell(cells[grid[ngi]], dir)
-			if abs(x) == half or abs(y) == half:
-				frontier.append(cell)
 
 func placeNeighborCell(currentCell: Cell) -> void:
 	var startDir = rng.randi(0, 3)
 	for i in 4:
 		var dir = (startDir + i) & 3
-		if currentCell.direction != -1 \
-		and i == 0 \
-		and rng.randf() < config.directionMomentum:
+		if currentCell.direction != -1 and i == 0 and rng.randf() < config.directionMomentum:
 			dir = currentCell.direction
 		var px = currentCell.x + Directions.DIR_X[dir]
 		var py = currentCell.y + Directions.DIR_Y[dir]
 		var gridI = px + py * gridWidth
-		if grid[gridI] == null and (not config.isStrictMaze or countNeighbors(px, py) <=1):
+		if grid[gridI] == null and (not config.isStrictMaze or countNeighbors(px, py) <= 1):
 			frontierDecayRandomizer()
 			var newCell = Cell.new(px, py)
 			newCell.direction = dir
 			grid[gridI] = cells.size()
+			frontier.append(cells.size())
 			cells.append(newCell)
-			frontier.append(newCell)
 			currentCell.connectToCell(newCell, dir)
 			return
-	frontier.erase(currentCell)
+	frontier.erase(currentCell) # TODO make an optimization here to avoid erase if possible
 
 func countNeighbors(x: int, y: int) -> int:
 	var count = 0
