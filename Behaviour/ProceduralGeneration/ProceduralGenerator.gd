@@ -22,7 +22,7 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 	for size in config.roomCoefficient.keys():
 		roomCounts[size] = 0
 
-func create() -> Array:
+func create() -> void:
 	# First cell generation and placement
 	var startCell = Cell.new(config.cellNumber, config.cellNumber)
 	grid[key(config.cellNumber, config.cellNumber)] = cells.size()
@@ -44,8 +44,6 @@ func create() -> Array:
 	# Second phase : optional loops and heat computation
 	socketRandomConnecter()	
 	recomputeHeat(startCell)
-	
-	return cells;
 
 func placeRoomIfPossible(cellIndex: int) -> bool:
 	var cell = cells[frontier[cellIndex]]
@@ -159,7 +157,7 @@ func socketRandomConnecter() -> void:
 			# Avoid double check
 			if !config.canLoopDoubleCheck and (dir == Directions.DIR_LEFT or dir == Directions.DIR_RIGHT):
 				continue
-			if cell.sockets[dir]:
+			if cell.socketMask & (1 << dir) > 0:
 				continue
 			if rng.randf() >= config.loopChance:
 				continue
@@ -183,13 +181,19 @@ func recomputeHeat(start: Cell):
 	while qi < queue.size():
 		var current = queue[qi]
 		qi += 1
-		for neighbor in current.sockets:
-			if neighbor == null:
-				continue
-			if neighbor.heat != -1:
-				continue
-			neighbor.heat = current.heat + 1
-			queue.append(neighbor)
+		
+		for dir in 4:
+			if current.socketMask & (1 << dir) > 0:
+				var nx = current.x + Directions.DIR_X[dir]
+				var ny = current.y + Directions.DIR_Y[dir]
+				var neighborIndex = grid.get(key(nx, ny), null)
+				if neighborIndex == null:
+					continue
+				var neighbor = cells[neighborIndex]
+				if neighbor.heat != -1:
+					continue
+				neighbor.heat = current.heat + 1
+				queue.append(neighbor)
 
 # Store x and y as only one int using bitwise operation to save performances and memory
 # << 32 will move bits to "32 bit to left"

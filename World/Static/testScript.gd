@@ -1,7 +1,9 @@
 extends Node2D
 
 var originSeed = 123
+var generator: ProceduralGenerator
 var cells = []
+var grid
 var max_heat := 0
 
 var cell_scale := 20
@@ -13,10 +15,12 @@ func _ready():
 
 	var seedHandler = SeedHandler.new(originSeed)
 	var config = ProceduralGeneratorConfig.new(seedHandler)
-	var generator := ProceduralGenerator.new(config)
+	generator = ProceduralGenerator.new(config)
 	offset = Vector2(-config.cellNumber, -config.cellNumber) * cell_scale + Vector2(500,350)
 
-	cells = generator.create()
+	generator.create()
+	cells = generator.cells
+	grid = generator.grid
 
 	for c in cells:
 		if c.heat > max_heat:
@@ -33,12 +37,19 @@ func _draw():
 
 		var p = offset + Vector2(cell.x, cell.y) * cell_scale
 
-		for neighbor in cell.sockets:
+		for dir in 4 :
+			if cell.socketMask & (1 << dir) > 0:
+				var nx = cell.x + Directions.DIR_X[dir]
+				var ny = cell.y + Directions.DIR_Y[dir]
+				var neighborIndex = grid.get(generator.key(nx, ny), null)
+				if neighborIndex == null:
+					continue
+				var neighbor = cells[neighborIndex]
 
-			if neighbor != null and neighbor.heat > cell.heat:
+				if neighbor != null and neighbor.heat > cell.heat:
 
-				var p2 = offset + Vector2(neighbor.x, neighbor.y) * cell_scale
-				draw_line(p, p2, Color.GREEN, 2)
+					var p2 = offset + Vector2(neighbor.x, neighbor.y) * cell_scale
+					draw_line(p, p2, Color.GREEN, 2)
 				
 	for cell in cells:
 		var p = offset + Vector2(cell.x, cell.y) * cell_scale
