@@ -2,8 +2,8 @@ extends Object
 
 class_name ProceduralGenerator
 
-var grid: Array
-var gridWidth : int
+var grid:= {}
+#var gridWidth : int
 var cells: Array = []
 var frontier: Array = []
 var config: ProceduralGeneratorConfig
@@ -14,22 +14,18 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 	cells.clear()
 	frontier.clear()
 	roomCounts.clear()
+	grid.clear()
 	
 	config = inputConfig
 	rng = config.seedHandler.dungeonRng.call(config.id)
 	
 	for size in config.roomCoefficient.keys():
 		roomCounts[size] = 0
-	
-	gridWidth = config.cellNumber * 2 + 1
-	# Grid initialization
-	grid = []
-	grid.resize(gridWidth * gridWidth)
 
 func create() -> Array:
 	# First cell generation and placement
 	var startCell = Cell.new(config.cellNumber, config.cellNumber)
-	grid[config.cellNumber + config.cellNumber * gridWidth] = cells.size()
+	grid[key(config.cellNumber, config.cellNumber)] = cells.size()
 	frontier.append(cells.size())
 	cells.append(startCell)
 	
@@ -76,11 +72,7 @@ func canPlaceRoomXY(cx:int, cy:int, size:int) -> bool:
 		for y in range(-half, half + 1):
 			var px = cx + x
 			var py = cy + y
-			# Position not in the grid capacity
-			if px < 0 or py < 0 or px >= gridWidth or py >= gridWidth:
-				return false
-			var gridI = px + py * gridWidth
-			if grid[gridI] != null:
+			if grid.get(key(px, py), null) != null:
 				neighborCount += 1
 				# if less than size - 1 only the first cell become a room
 				# size - 1 to avoid room collapsing
@@ -90,18 +82,18 @@ func canPlaceRoomXY(cx:int, cy:int, size:int) -> bool:
 	
 func carveRoomXY(cx:int, cy:int, size:int):
 	var half = int(size / 2.0)
-	var centerCell = cells[grid[cx + cy * gridWidth]]
+	var centerCell = cells[grid[key(cx,  cy)]]
 	for x in range(-half, half + 1):
 		for y in range(-half, half + 1):
 			var nx = cx + x
 			var ny = cy + y
-			var gi = nx + ny * gridWidth
+			var gridKey = key(nx, ny)
 			var cell
-			if grid[gi] != null:
-				cell = cells[grid[gi]]
+			if grid.get(gridKey, null) != null:
+				cell = cells[grid[gridKey]]
 			else:
 				cell = Cell.new(nx, ny)
-				grid[gi] = cells.size()
+				grid[gridKey] = cells.size()
 				if abs(x) == half or abs(y) == half:
 					frontier.append(cells.size())
 				cells.append(cell)
@@ -110,9 +102,9 @@ func carveRoomXY(cx:int, cy:int, size:int):
 				var px = cell.x + Directions.DIR_X[dir]
 				var py = cell.y + Directions.DIR_Y[dir]
 				if abs(px - cx) <= half and abs(py - cy) <= half:
-					var ngi = px + py * gridWidth
-					if grid[ngi] != null && insideRoom(centerCell, px, py, half):
-						cell.connectToCell(cells[grid[ngi]], dir)
+					var newGridKey = key(px,  py)
+					if grid.get(newGridKey, null) != null && insideRoom(centerCell, px, py, half):
+						cell.connectToCell(cells[grid[newGridKey]], dir)
 
 func placeNeighborCell(cellIndex: int) -> void:
 	var cell = cells[frontier[cellIndex]]
@@ -124,12 +116,12 @@ func placeNeighborCell(cellIndex: int) -> void:
 			dir = cell.direction
 		var px = cell.x + Directions.DIR_X[dir]
 		var py = cell.y + Directions.DIR_Y[dir]
-		var gridI = px + py * gridWidth
-		if grid[gridI] == null and (not config.isStrictMaze or countNeighbors(px, py) <= 1):
+		var gridKey = key(px, py)
+		if grid.get(gridKey, null) == null and (not config.isStrictMaze or countNeighbors(px, py) <= 1):
 			frontierDecayRandomizer()
 			var newCell = Cell.new(px, py)
 			newCell.direction = dir
-			grid[gridI] = cells.size()
+			grid[gridKey] = cells.size()
 			frontier.append(cells.size())
 			cells.append(newCell)
 			cell.connectToCell(newCell, dir)
@@ -141,7 +133,7 @@ func countNeighbors(x: int, y: int) -> int:
 	for dir in 4:
 		var px = x + Directions.DIR_X[dir]
 		var py = y + Directions.DIR_Y[dir]
-		if grid[px + py * gridWidth] != null:
+		if grid.get(key(px,  py), null) != null:
 			count += 1
 	return count
 	
@@ -173,7 +165,7 @@ func socketRandomConnecter() -> void:
 				continue
 			var px = cell.x + Directions.DIR_X[dir]
 			var py = cell.y + Directions.DIR_Y[dir]
-			var neighborIndex = grid[px + py * gridWidth]
+			var neighborIndex = grid.get(key(px, py), null)
 			if null != neighborIndex:
 				cell.connectToCell(cells[neighborIndex], dir)
 
@@ -198,6 +190,16 @@ func recomputeHeat(start: Cell):
 				continue
 			neighbor.heat = current.heat + 1
 			queue.append(neighbor)
-			
+
+# Store x and y as only one int using bitwise operation to save performances and memory
+# << 32 will move bits to "32 bit to left"
+# & 0xffffffff is used to only keep the 32 last bits
+# result layout : xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+# 32 bit x and 32 bit y
+# Used with a dictionary, eg :
+# var grid = {}
+# grid[key(x, y)] = value
+# var value = grid.get(key(x, y), null) where null is a default value
+# null != grid.get(key(x, y), null)
 func key(x:int, y:int) -> int:
 	return (x << 32) | (y & 0xffffffff)
