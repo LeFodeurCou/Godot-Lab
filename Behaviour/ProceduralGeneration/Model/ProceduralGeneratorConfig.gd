@@ -5,7 +5,7 @@ class_name ProceduralGeneratorConfig
 var id = "myFirstProceduralMaze"
 var seedHandler: SeedHandler
 # max cellNumber limit for now : ~250K
-var cellNumber = 100000
+var cellNumber = 100
 # true : more corridor maze by counting neighbors
 # false : more blob maze (no neighbors count)
 var isStrictMaze = true

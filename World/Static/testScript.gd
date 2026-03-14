@@ -2,16 +2,16 @@ extends Node2D
 
 var originSeed = 123
 var generator: ProceduralGenerator
-var grid
 var max_heat := 0
 
 # SoA (Structure of Arrays) : Replace Cell class
-var cellX: Array = []
-var cellY: Array = []
-var cellDirection: Array = []
-var cellHeat: Array = []
-var cellSocketMask: Array = []
-var cellStructureType: Array = []
+var cellX: Array = PackedInt32Array()
+var cellY: Array = PackedInt32Array()
+var cellDirection: Array = PackedByteArray()
+var cellNeighbors := PackedInt32Array()
+var cellHeat: Array = PackedInt32Array()
+var cellSocketMask: Array = PackedByteArray()
+var cellStructureType: Array = PackedByteArray()
 var cellCount: int = 0;
 
 var cell_scale := 20
@@ -27,6 +27,7 @@ func _ready():
 	cellX.clear()
 	cellY.clear()
 	cellDirection.clear()
+	cellNeighbors.clear()
 	cellHeat.clear()
 	cellSocketMask.clear()
 	cellStructureType.clear()
@@ -46,10 +47,10 @@ func _ready():
 	cellX = generator.cellX
 	cellY = generator.cellY
 	cellDirection = generator.cellDirection
+	cellNeighbors = generator.cellNeighbors
 	cellHeat = generator.cellHeat
 	cellSocketMask = generator.cellSocketMask
 	cellStructureType = generator.cellStructureType
-	grid = generator.grid
 	cellCount = generator.cellCount
 
 	for heat in cellHeat:
@@ -68,10 +69,8 @@ func _draw():
 
 		for dir in 4 :
 			if cellSocketMask[cellIdx] & (1 << dir):
-				var nx = cellX[cellIdx] + Directions.DIR_X[dir]
-				var ny = cellY[cellIdx] + Directions.DIR_Y[dir]
-				var neighborIndex = grid.get(generator.key(nx, ny), null)
-				if neighborIndex == null:
+				var neighborIndex = cellNeighbors[cellIdx * 4 + dir]
+				if neighborIndex == -1:
 					continue
 				if cellHeat[neighborIndex] > cellHeat[cellIdx]:
 

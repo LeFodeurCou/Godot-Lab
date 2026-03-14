@@ -6,6 +6,7 @@ class_name ProceduralGenerator
 var cellX: Array = PackedInt32Array()
 var cellY: Array = PackedInt32Array()
 var cellDirection: Array = PackedByteArray()
+var cellNeighbors := PackedInt32Array()
 var cellHeat: Array = PackedInt32Array()
 var cellSocketMask: Array = PackedByteArray()
 var cellStructureType: Array = PackedByteArray()
@@ -19,6 +20,7 @@ var roomCounts:= {}
 
 const DX = Directions.DIR_X
 const DY = Directions.DIR_Y
+const DOPP = Directions.OPP
 
 func _init(inputConfig: ProceduralGeneratorConfig):
 	config = inputConfig
@@ -28,6 +30,7 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 	cellX.clear()
 	cellY.clear()
 	cellDirection.clear()
+	cellNeighbors.clear()
 	cellHeat.clear()
 	cellSocketMask.clear()
 	cellStructureType.clear()
@@ -36,6 +39,8 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 	cellX.resize(config.cellNumber)
 	cellY.resize(config.cellNumber)
 	cellDirection.resize(config.cellNumber)
+	cellNeighbors.resize(config.cellNumber * 4)
+	cellNeighbors.fill(-1)
 	cellHeat.resize(config.cellNumber)
 	cellSocketMask.resize(config.cellNumber)
 	cellStructureType.resize(config.cellNumber)
@@ -63,18 +68,23 @@ func create() -> void:
 	var frontierIndex
 	# Here we check frontier size to avoid pathological seeds
 	while cellCount < config.cellNumber and frontier.size() > 0:
-		if rng.randf() < config.corridorCoefficient:
+		var frontierSize = frontier.size()
+		if frontierSize == 1:
+			# Take the last frontier it stay after some was removed
+			frontierIndex = 0
+		elif rng.randf() < 0.9:
 			# Take the last frontier cell
-			frontierIndex = frontier.size() - 1
+			frontierIndex = frontierSize - 1
 		else:
 			# Take a random frontier cell
-			frontierIndex = rng.randi(0, frontier.size() - 1)
+			frontierIndex = rng.randi(0, frontierSize - 1)
 		if(!placeRoomIfPossible(frontierIndex)):
 			placeNeighborCell(frontierIndex)
 
 	# Second phase : optional loops and heat computation
 	socketRandomConnecter()
 	recomputeHeat()
+	grid.clear()
 
 func placeRoomIfPossible(frontierIndex: int) -> bool:
 	var cellIndex = frontier[frontierIndex]
@@ -142,8 +152,13 @@ func carveRoomXY(cx:int, cy:int, size:int):
 						connectCellToCell(cellIndex, grid[newGridKey], dir)
 
 func connectCellToCell(idxCellSource: int, idxCellTarget: int, dir: int):
+	if cellSocketMask[idxCellSource] & (1 << dir):
+		return
+	var opp = DOPP[dir]
 	cellSocketMask[idxCellSource] |= (1 << dir)
-	cellSocketMask[idxCellTarget] |= (1 << Directions.OPP[dir])
+	cellSocketMask[idxCellTarget] |= (1 << opp)
+	cellNeighbors[idxCellSource * 4 + dir] = idxCellTarget
+	cellNeighbors[idxCellTarget * 4 + opp] = idxCellSource
 
 func placeNeighborCell(frontierIndex: int) -> void:
 	var cellIndex = frontier[frontierIndex]
@@ -193,9 +208,6 @@ func socketRandomConnecter() -> void:
 	if 0 >= config.loopChance:
 		return;
 	for idx in range(cellCount):
-		var cx = cellX[idx]
-		var cy = cellY[idx]
-		
 		for dir in 4:
 			# Avoid double check
 			if !config.canLoopDoubleCheck and (dir == Directions.DIR_LEFT or dir == Directions.DIR_RIGHT):
@@ -204,11 +216,9 @@ func socketRandomConnecter() -> void:
 				continue
 			if rng.randf() >= config.loopChance:
 				continue
-			var px = cx + DX[dir]
-			var py = cy + DY[dir]
-			var gridKey = key(px, py)
-			if grid.has(gridKey):
-				connectCellToCell(idx, grid[gridKey], dir)
+			var neighborIndex = cellNeighbors[idx*4+dir]
+			if -1 != neighborIndex:
+				connectCellToCell(idx, neighborIndex, dir)
 
 func insideRoom(centerIndex, x, y, half):
 	return (
@@ -225,16 +235,11 @@ func recomputeHeat():
 	while qi < queue.size():
 		var currentIndex = queue[qi]
 		qi += 1
-		var cx = cellX[currentIndex]
-		var cy = cellY[currentIndex]
 		for dir in 4:
 			if cellSocketMask[currentIndex] & (1 << dir):
-				var nx = cx + DX[dir]
-				var ny = cy + DY[dir]
-				var gridKey = key(nx, ny)
-				if !grid.has(gridKey):
+				var neighborIndex = cellNeighbors[currentIndex * 4 + dir]
+				if -1 == neighborIndex:
 					continue
-				var neighborIndex = grid.get(gridKey)
 				if cellHeat[neighborIndex] != -1:
 					continue
 				cellHeat[neighborIndex] = cellHeat[currentIndex] + 1
