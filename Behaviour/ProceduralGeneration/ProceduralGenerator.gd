@@ -9,6 +9,7 @@ var cellDirection: Array = PackedByteArray()
 var cellNeighbors := PackedInt32Array()
 var cellHeat: Array = PackedInt32Array()
 var cellSocketMask: Array = PackedByteArray()
+var cellKey := PackedInt64Array()
 var cellStructureType: Array = PackedByteArray()
 var cellCount: int = 1
 
@@ -22,6 +23,13 @@ const DX = Directions.DIR_X
 const DY = Directions.DIR_Y
 const DOPP = Directions.OPP
 
+const KEY_DIR = [
+	-1,           # up    (y - 1)
+	1 << 32,      # right (x + 1)
+	1,            # down  (y + 1)
+	-(1 << 32)    # left  (x - 1)
+]
+
 func _init(inputConfig: ProceduralGeneratorConfig):
 	config = inputConfig
 	rng = config.seedHandler.dungeonRng.call(config.id)
@@ -33,6 +41,7 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 	cellNeighbors.clear()
 	cellHeat.clear()
 	cellSocketMask.clear()
+	cellKey.clear()
 	cellStructureType.clear()
 	
 	# SoA Cell init size
@@ -43,6 +52,7 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 	cellNeighbors.fill(-1)
 	cellHeat.resize(config.cellNumber)
 	cellSocketMask.resize(config.cellNumber)
+	cellKey.resize(config.cellNumber)
 	cellStructureType.resize(config.cellNumber)
 	
 	# Soa Cell init values
@@ -61,7 +71,9 @@ func create() -> void:
 	# First SoA Cell
 	cellX[0] = config.cellNumber
 	cellY[0] = config.cellNumber
-	grid[key(config.cellNumber, config.cellNumber)] = 0
+	var startKey = key(config.cellNumber, config.cellNumber)
+	cellKey[0] = startKey
+	grid[startKey] = 0
 	frontier.append(0)
 	
 	# First phase : graph generation
@@ -139,6 +151,7 @@ func carveRoomXY(cx:int, cy:int, size:int):
 				cellX[cellIndex] = nx
 				cellY[cellIndex] = ny
 				grid[gridKey] = cellIndex
+				cellKey[cellIndex] = gridKey
 				cellCount += 1
 				if abs(x) == half or abs(y) == half:
 					frontier.append(cellIndex)
@@ -147,7 +160,7 @@ func carveRoomXY(cx:int, cy:int, size:int):
 				var px = nx + DX[dir]
 				var py = ny + DY[dir]
 				if abs(px - cx) <= half and abs(py - cy) <= half:
-					var newGridKey = key(px,  py)
+					var newGridKey = cellKey[cellIndex] + KEY_DIR[dir]
 					if grid.has(newGridKey) && insideRoom(centerCellIndex, px, py, half):
 						connectCellToCell(cellIndex, grid[newGridKey], dir)
 
@@ -172,7 +185,7 @@ func placeNeighborCell(frontierIndex: int) -> void:
 			dir = cellDirection[cellIndex]
 		var px = cx + DX[dir]
 		var py = cy + DY[dir]
-		var gridKey = key(px, py)
+		var gridKey = cellKey[cellIndex] + KEY_DIR[dir]
 		# countNeighbors inlined here
 		var neighborCount = 0
 		for ndir in 4:
@@ -185,6 +198,7 @@ func placeNeighborCell(frontierIndex: int) -> void:
 			cellY[newCellIndex] = py
 			cellDirection[newCellIndex] = dir
 			grid[gridKey] = newCellIndex
+			cellKey[newCellIndex] = gridKey
 			cellCount += 1;
 			frontier.append(newCellIndex)
 			connectCellToCell(cellIndex, newCellIndex, dir)

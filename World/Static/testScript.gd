@@ -1,5 +1,7 @@
 extends Node2D
 
+const DEBUG_DRAW_LIMIT = 1000
+
 var originSeed = 123
 var generator: ProceduralGenerator
 var max_heat := 0
@@ -61,9 +63,9 @@ func _ready():
 
 
 func _draw():
-	
+	var drawCount = min(cellCount, DEBUG_DRAW_LIMIT)
 	# Draw links
-	for cellIdx in cellCount:
+	for cellIdx in range(drawCount):
 
 		var p = offset + Vector2(cellX[cellIdx], cellY[cellIdx]) * cell_scale
 
@@ -78,7 +80,7 @@ func _draw():
 					draw_line(p, p2, Color.GREEN, 2)
 				
 	# Draw cells above links
-	for cellIdx in cellCount:
+	for cellIdx in range(drawCount):
 		var p = offset + Vector2(cellX[cellIdx], cellY[cellIdx]) * cell_scale
 		var t = 0.0
 		if max_heat > 0:
@@ -90,7 +92,7 @@ func _draw():
 			var color = Color(t, 0, 1.0 - t) # blue to red from heat = 0 to max heat
 			draw_circle(p, r, color)
 	# Draw heat on top right of cells
-	for cellIdx in cellCount:
+	for cellIdx in range(drawCount):
 		var p = offset + Vector2(cellX[cellIdx], cellY[cellIdx]) * cell_scale
 		draw_string(
 			ThemeDB.fallback_font,
