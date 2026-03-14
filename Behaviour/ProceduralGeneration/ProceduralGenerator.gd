@@ -2,36 +2,67 @@ extends Object
 
 class_name ProceduralGenerator
 
+# SoA (Structure of Arrays) : Replace Cell class
+var cellX: Array = []
+var cellY: Array = []
+var cellDirection: Array = []
+var cellHeat: Array = []
+var cellSocketMask: Array = []
+var cellStructureType: Array = []
+var cellCount: int = 1
+
 var grid:= {}
-#var gridWidth : int
-var cells: Array = []
 var frontier: Array = []
 var config: ProceduralGeneratorConfig
 var rng: RandomGenerator
-var roomCounts = {}
+var roomCounts:= {}
+
+const DX = Directions.DIR_X
+const DY = Directions.DIR_Y
 
 func _init(inputConfig: ProceduralGeneratorConfig):
-	cells.clear()
+	config = inputConfig
+	rng = config.seedHandler.dungeonRng.call(config.id)
+	
+	# SoA Cell clear
+	cellX.clear()
+	cellY.clear()
+	cellDirection.clear()
+	cellHeat.clear()
+	cellSocketMask.clear()
+	cellStructureType.clear()
+	
+	# SoA Cell init size
+	cellX.resize(config.cellNumber)
+	cellY.resize(config.cellNumber)
+	cellDirection.resize(config.cellNumber)
+	cellHeat.resize(config.cellNumber)
+	cellSocketMask.resize(config.cellNumber)
+	cellStructureType.resize(config.cellNumber)
+	
+	# Soa Cell init values
+	cellDirection.fill(-1)
+	cellHeat.fill(-1)
+	cellSocketMask.fill(0)
+	
 	frontier.clear()
 	roomCounts.clear()
 	grid.clear()
 	
-	config = inputConfig
-	rng = config.seedHandler.dungeonRng.call(config.id)
-	
-	for size in config.roomCoefficient.keys():
+	for size in config.roomSizes:
 		roomCounts[size] = 0
 
 func create() -> void:
-	# First cell generation and placement
-	var startCell = Cell.new(config.cellNumber, config.cellNumber)
-	grid[key(config.cellNumber, config.cellNumber)] = cells.size()
-	frontier.append(cells.size())
-	cells.append(startCell)
+	# First SoA Cell
+	cellX[0] = config.cellNumber
+	cellY[0] = config.cellNumber
+	grid[key(config.cellNumber, config.cellNumber)] = 0
+	frontier.append(0)
 	
 	# First phase : graph generation
 	var frontierIndex
-	while cells.size() < config.cellNumber:
+	# Here we check frontier size to avoid pathological seeds
+	while cellCount < config.cellNumber and frontier.size() > 0:
 		if rng.randf() < config.corridorCoefficient:
 			# Take the last frontier cell
 			frontierIndex = frontier.size() - 1
@@ -42,14 +73,16 @@ func create() -> void:
 			placeNeighborCell(frontierIndex)
 
 	# Second phase : optional loops and heat computation
-	socketRandomConnecter()	
-	recomputeHeat(startCell)
+	socketRandomConnecter()
+	recomputeHeat()
 
-func placeRoomIfPossible(cellIndex: int) -> bool:
-	var cell = cells[frontier[cellIndex]]
-	for size in config.roomCoefficient.keys():
+func placeRoomIfPossible(frontierIndex: int) -> bool:
+	var cellIndex = frontier[frontierIndex]
+	var cx = cellX[cellIndex]
+	var cy = cellY[cellIndex]
+	for size in config.roomSizes:
 		# Avoid overshooting the max cell number
-		if cells.size() + size * size > config.cellNumber:
+		if cellCount + size * size > config.cellNumber:
 			continue
 		var coef = config.roomCoefficient[size][0]
 		var maxRooms = config.roomCoefficient[size][1]
@@ -57,20 +90,22 @@ func placeRoomIfPossible(cellIndex: int) -> bool:
 			continue
 		if rng.randf() > coef:
 			continue
-		if canPlaceRoomXY(cell.x, cell.y, size):
-			carveRoomXY(cell.x, cell.y, size)
+		if canPlaceRoomXY(cx, cy, size):
+			carveRoomXY(cx, cy, size)
 			roomCounts[size] += 1
 			return true
 	return false
 
 func canPlaceRoomXY(cx:int, cy:int, size:int) -> bool:
-	var half = int(size / 2.0)
+	# a bit shift to the right is a division by 2
+	# eg. 4 is 100, 2 is 10 then 4 >> 1 == 2
+	var half = size >> 1
 	var neighborCount = 0
 	for x in range(-half, half + 1):
 		for y in range(-half, half + 1):
 			var px = cx + x
 			var py = cy + y
-			if grid.get(key(px, py), null) != null:
+			if grid.has(key(px, py)):
 				neighborCount += 1
 				# if less than size - 1 only the first cell become a room
 				# size - 1 to avoid room collapsing
@@ -80,60 +115,66 @@ func canPlaceRoomXY(cx:int, cy:int, size:int) -> bool:
 	
 func carveRoomXY(cx:int, cy:int, size:int):
 	var half = int(size / 2.0)
-	var centerCell = cells[grid[key(cx,  cy)]]
+	var centerCellIndex = grid[key(cx,  cy)]
 	for x in range(-half, half + 1):
 		for y in range(-half, half + 1):
 			var nx = cx + x
 			var ny = cy + y
 			var gridKey = key(nx, ny)
-			var cell
-			if grid.get(gridKey, null) != null:
-				cell = cells[grid[gridKey]]
+			var cellIndex
+			if grid.has(gridKey):
+				cellIndex = grid[gridKey]
 			else:
-				cell = Cell.new(nx, ny)
-				grid[gridKey] = cells.size()
+				cellIndex = cellCount
+				cellX[cellIndex] = nx
+				cellY[cellIndex] = ny
+				grid[gridKey] = cellIndex
+				cellCount += 1
 				if abs(x) == half or abs(y) == half:
-					frontier.append(cells.size())
-				cells.append(cell)
+					frontier.append(cellIndex)
 			# Connect internal neighbors
 			for dir in 4:
-				var px = cell.x + Directions.DIR_X[dir]
-				var py = cell.y + Directions.DIR_Y[dir]
+				var px = nx + DX[dir]
+				var py = ny + DY[dir]
 				if abs(px - cx) <= half and abs(py - cy) <= half:
 					var newGridKey = key(px,  py)
-					if grid.get(newGridKey, null) != null && insideRoom(centerCell, px, py, half):
-						cell.connectToCell(cells[grid[newGridKey]], dir)
+					if grid.has(newGridKey) && insideRoom(centerCellIndex, px, py, half):
+						connectCellToCell(cellIndex, grid[newGridKey], dir)
 
-func placeNeighborCell(cellIndex: int) -> void:
-	var cell = cells[frontier[cellIndex]]
+func connectCellToCell(idxCellSource: int, idxCellTarget: int, dir: int):
+	cellSocketMask[idxCellSource] |= (1 << dir)
+	cellSocketMask[idxCellTarget] |= (1 << Directions.OPP[dir])
+
+func placeNeighborCell(frontierIndex: int) -> void:
+	var cellIndex = frontier[frontierIndex]
+	var cx = cellX[cellIndex]
+	var cy = cellY[cellIndex]
 	# O(1) Cyclic direction to avoid a O(n) shuffle
 	var startDir = rng.randi(0, 3)
 	for i in 4:
 		var dir = (startDir + i) & 3
-		if cell.direction != -1 and i == 0 and rng.randf() < config.directionMomentum:
-			dir = cell.direction
-		var px = cell.x + Directions.DIR_X[dir]
-		var py = cell.y + Directions.DIR_Y[dir]
+		if cellDirection[cellIndex] != -1 and i == 0 and rng.randf() < config.directionMomentum:
+			dir = cellDirection[cellIndex]
+		var px = cx + DX[dir]
+		var py = cy + DY[dir]
 		var gridKey = key(px, py)
-		if grid.get(gridKey, null) == null and (not config.isStrictMaze or countNeighbors(px, py) <= 1):
+		# countNeighbors inlined here
+		var neighborCount = 0
+		for ndir in 4:
+			if grid.has(key(px + DX[ndir],  py + DY[ndir])):
+				neighborCount += 1
+		if !grid.has(gridKey) and (not config.isStrictMaze or neighborCount <= 1):
 			frontierDecayRandomizer()
-			var newCell = Cell.new(px, py)
-			newCell.direction = dir
-			grid[gridKey] = cells.size()
-			frontier.append(cells.size())
-			cells.append(newCell)
-			cell.connectToCell(newCell, dir)
+			var newCellIndex = cellCount
+			cellX[newCellIndex] = px
+			cellY[newCellIndex] = py
+			cellDirection[newCellIndex] = dir
+			grid[gridKey] = newCellIndex
+			cellCount += 1;
+			frontier.append(newCellIndex)
+			connectCellToCell(cellIndex, newCellIndex, dir)
 			return
-	frontierRemove(cellIndex)
-
-func countNeighbors(x: int, y: int) -> int:
-	var count = 0
-	for dir in 4:
-		var px = x + Directions.DIR_X[dir]
-		var py = y + Directions.DIR_Y[dir]
-		if grid.get(key(px,  py), null) != null:
-			count += 1
-	return count
+	frontierRemove(frontierIndex)
 	
 func frontierDecayRandomizer() -> void:
 	var frontierSize = frontier.size()
@@ -151,49 +192,53 @@ func frontierRemove(i):
 func socketRandomConnecter() -> void:
 	if 0 >= config.loopChance:
 		return;
-	for i in range(cells.size()):
-		var cell = cells[i]
+	for idx in range(cellCount):
+		var cx = cellX[idx]
+		var cy = cellY[idx]
+		
 		for dir in 4:
 			# Avoid double check
 			if !config.canLoopDoubleCheck and (dir == Directions.DIR_LEFT or dir == Directions.DIR_RIGHT):
 				continue
-			if cell.socketMask & (1 << dir) > 0:
+			if cellSocketMask[idx] & (1 << dir):
 				continue
 			if rng.randf() >= config.loopChance:
 				continue
-			var px = cell.x + Directions.DIR_X[dir]
-			var py = cell.y + Directions.DIR_Y[dir]
-			var neighborIndex = grid.get(key(px, py), null)
-			if null != neighborIndex:
-				cell.connectToCell(cells[neighborIndex], dir)
+			var px = cx + DX[dir]
+			var py = cy + DY[dir]
+			var gridKey = key(px, py)
+			if grid.has(gridKey):
+				connectCellToCell(idx, grid[gridKey], dir)
 
-func insideRoom(center, x, y, half):
+func insideRoom(centerIndex, x, y, half):
 	return (
-		abs(x - center.x) <= half
-		and abs(y - center.y) <= half
+		abs(x - cellX[centerIndex]) <= half
+		and abs(y - cellY[centerIndex]) <= half
 	)
 
-func recomputeHeat(start: Cell):
-	start.heat = 0
+func recomputeHeat():
+	var startIndex = 0
+	cellHeat[startIndex] = 0
 	var queue = []
 	var qi = 0
-	queue.append(start)
+	queue.append(startIndex)
 	while qi < queue.size():
-		var current = queue[qi]
+		var currentIndex = queue[qi]
 		qi += 1
-		
+		var cx = cellX[currentIndex]
+		var cy = cellY[currentIndex]
 		for dir in 4:
-			if current.socketMask & (1 << dir) > 0:
-				var nx = current.x + Directions.DIR_X[dir]
-				var ny = current.y + Directions.DIR_Y[dir]
-				var neighborIndex = grid.get(key(nx, ny), null)
-				if neighborIndex == null:
+			if cellSocketMask[currentIndex] & (1 << dir):
+				var nx = cx + DX[dir]
+				var ny = cy + DY[dir]
+				var gridKey = key(nx, ny)
+				if !grid.has(gridKey):
 					continue
-				var neighbor = cells[neighborIndex]
-				if neighbor.heat != -1:
+				var neighborIndex = grid.get(gridKey)
+				if cellHeat[neighborIndex] != -1:
 					continue
-				neighbor.heat = current.heat + 1
-				queue.append(neighbor)
+				cellHeat[neighborIndex] = cellHeat[currentIndex] + 1
+				queue.append(neighborIndex)
 
 # Store x and y as only one int using bitwise operation to save performances and memory
 # << 32 will move bits to "32 bit to left"
@@ -205,5 +250,6 @@ func recomputeHeat(start: Cell):
 # grid[key(x, y)] = value
 # var value = grid.get(key(x, y), null) where null is a default value
 # null != grid.get(key(x, y), null)
+# using ^ (WOR) instead | (OR) : XOR avoids rare collision patterns.
 func key(x:int, y:int) -> int:
-	return (x << 32) | (y & 0xffffffff)
+	return (x << 32) ^ (y & 0xffffffff)

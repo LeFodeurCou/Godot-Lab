@@ -16,6 +16,7 @@ var roomCoefficient = { #size: [coefficient, maxNumber, completionRatio]
 	5: [1, 1, 0.9],
 	3: [0.3, 4, 0.2],
 } # 0.05 of cells can become a room candidate
+var roomSizes
 
 # Second phase variables
 
@@ -24,3 +25,4 @@ var canLoopDoubleCheck = false # false is more optimized but lead to less loop
 
 func _init(seedHandlerInput: SeedHandler):
 	seedHandler = seedHandlerInput
+	roomSizes = roomCoefficient.keys()
