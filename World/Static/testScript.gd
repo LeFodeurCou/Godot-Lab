@@ -17,6 +17,11 @@ var cellCount: int = 0;
 var cell_scale := 20
 var offset
 
+# Timer
+var start
+var end
+var elapsed
+
 func _ready():
 	# SoA Cell clear
 	cellX.clear()
@@ -33,7 +38,11 @@ func _ready():
 	generator = ProceduralGenerator.new(config)
 	offset = Vector2(-config.cellNumber, -config.cellNumber) * cell_scale + Vector2(500,350)
 
+	start = Time.get_ticks_usec()
 	generator.create()
+	end = Time.get_ticks_usec()
+	elapsed = (end - start) / 1000.0
+	
 	cellX = generator.cellX
 	cellY = generator.cellY
 	cellDirection = generator.cellDirection
@@ -51,8 +60,6 @@ func _ready():
 
 
 func _draw():
-	draw_string(ThemeDB.fallback_font, Vector2(10,20), str(cellCount))
-	draw_string(ThemeDB.fallback_font, Vector2(10,40), str(originSeed))
 	
 	# Draw links
 	for cellIdx in cellCount:
@@ -94,3 +101,9 @@ func _draw():
 			-1,
 			10
 		)
+	
+	# Draw meta data
+	draw_string(ThemeDB.fallback_font, Vector2(10,20), str("Cells : ", cellCount))
+	draw_string(ThemeDB.fallback_font, Vector2(10,40), str("Seed : ", originSeed))
+	draw_string(ThemeDB.fallback_font, Vector2(10,60), str("Gen in : ", elapsed, "ms"))
+		

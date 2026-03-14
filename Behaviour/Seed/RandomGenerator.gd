@@ -30,3 +30,21 @@ func shuffle(array: Array) -> Array:
 		result[j] = tmp
 
 	return result
+
+func positionalRng(x:int, y:int, originSeed:int) -> int:
+	# mix x coordinate with large prime
+	var h = x * 374761393
+	# mix y coordinate with another large prime
+	h += y * 668265263
+	# combine world seed with coordinates
+	h ^= originSeed
+	# spread high bits into low bits
+	h = (h ^ (h >> 13)) * 1274126177
+	# final avalanche mixing
+	return h ^ (h >> 16)
+
+# Usage if positional_randf(cx,cy,seed) < 0.1:
+#	spawn_loot()
+func positionalRandf(x:int, y:int, originSeed:int) -> float:
+	var r = positionalRng(x,y,originSeed)
+	return float(r & 0xffff) / 65535.0

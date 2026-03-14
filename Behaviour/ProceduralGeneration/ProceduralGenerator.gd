@@ -3,12 +3,12 @@ extends Object
 class_name ProceduralGenerator
 
 # SoA (Structure of Arrays) : Replace Cell class
-var cellX: Array = []
-var cellY: Array = []
-var cellDirection: Array = []
-var cellHeat: Array = []
-var cellSocketMask: Array = []
-var cellStructureType: Array = []
+var cellX: Array = PackedInt32Array()
+var cellY: Array = PackedInt32Array()
+var cellDirection: Array = PackedByteArray()
+var cellHeat: Array = PackedInt32Array()
+var cellSocketMask: Array = PackedByteArray()
+var cellStructureType: Array = PackedByteArray()
 var cellCount: int = 1
 
 var grid:= {}
@@ -250,6 +250,5 @@ func recomputeHeat():
 # grid[key(x, y)] = value
 # var value = grid.get(key(x, y), null) where null is a default value
 # null != grid.get(key(x, y), null)
-# using ^ (WOR) instead | (OR) : XOR avoids rare collision patterns.
 func key(x:int, y:int) -> int:
-	return (x << 32) ^ (y & 0xffffffff)
+	return (x << 32) | (y & 0xffffffff)
