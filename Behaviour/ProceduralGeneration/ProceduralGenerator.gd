@@ -21,8 +21,6 @@ var graphBuildProgression: float
 var dirNoise := FastNoiseLite.new()
 # Perlin noise
 var biomeNoise := FastNoiseLite.new()
-# heat distribution
-var expectedMaxHeat: float
 
 var config: ProceduralGeneratorConfig
 # Values from config
@@ -130,8 +128,6 @@ func internalValuesInit() -> void:
 	# Perlin noise setup
 	biomeNoise.seed = rng.randi(0, 2147483647)
 	biomeNoise.frequency = 0.02
-	# maxHeat approximation
-	expectedMaxHeat = sqrt(cellNumber) * 2
 
 func create() -> void:
 	# First SoA Cell
@@ -148,7 +144,7 @@ func create() -> void:
 	while cellCount < cellNumber and frontier.size() > 0:
 		graphBuildProgression = float(cellCount) / float(cellNumber)
 		var frontierSize = frontier.size()
-		#Branch Depth Bias
+		# Branch Depth Bias
 		var r = rng.randf()
 		if r < 0.6:
 			# Take the last frontier cell
@@ -177,11 +173,9 @@ func placeRoomIfPossible(frontierIndex: int) -> bool:
 		if cellCount + size * size > cellNumber:
 			continue
 		var roomConfig = roomCoefficient[size]
-		var biome = (biomeNoise.get_noise_2d(cx, cy) + 1.0) *0.5
-		var heatRatio = float(cellHeat[cellIndex] + 1) / expectedMaxHeat
-		var heatMin = roomConfig[3] * biome
+		var biome = (biomeNoise.get_noise_2d(cx, cy) + 1.0) * 0.5
 		var threshold = roomConfig[2] * biome
-		if graphBuildProgression <= threshold or heatMin <= heatRatio:
+		if graphBuildProgression <= threshold:
 			continue
 		var maxRooms = roomConfig[1]
 		if roomCounts[size] >= maxRooms:
@@ -231,7 +225,8 @@ func carveRoomXY(cx:int, cy:int, size:int):
 				cellKey[cellIndex] = gridKey
 				cellCount += 1
 				if abs(x) == half or abs(y) == half:
-					frontier.append(cellIndex)
+					if cellIndex not in frontier:
+						frontier.append(cellIndex)
 			# Connect internal neighbors
 			for dir in 4:
 				var px = nx + DX[dir]
@@ -266,6 +261,8 @@ func placeNeighborCell(frontierIndex: int) -> void:
 		for ndir in 4:
 			if grid.has(gridKey + KEY_DIR[ndir]):
 				neighborCount += 1
+				if neighborCount > 1:
+					break
 		if isStrictMaze and neighborCount > 1:
 			continue
 		var px = cx + DX[dir]

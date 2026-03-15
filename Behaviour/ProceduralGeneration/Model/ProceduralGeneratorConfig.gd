@@ -19,24 +19,21 @@ var frontierDecay: float = 0.1
 var directionMomentum: float = 0.3
 # We need to start by greater rooms first
 # to avoid erasing smallest one after they was generated
-# size: [coefficient, maxNumber, threshold, heatMin]
+# size: [coefficient, maxNumber, threshold]
 # coefficient : chances rooms can appear during generation
 # maxNumber : room limit in one generation
 # threshold : rooms can't appear before a threshold based on the graph build progression
 # -> can quickly hard limit rooms on smaller cellNumber
-# heatMin : a heat ration when rooms can start to appear
 var roomCoefficient: Dictionary = {
 	5: [
 		1,
 		1, 
-		0.79,
 		0.8,
 	],
 	3: [
 		0.3, 
 		4, 
-		0.05,
-		0.1,
+		0.3,
 	],
 } # 0.05 of cells can become a room candidate
 var roomSizes: Array = PackedInt32Array()
