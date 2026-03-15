@@ -39,7 +39,7 @@ func _ready():
 	var seedHandler = SeedHandler.new(originSeed)
 	var config = ProceduralGeneratorConfig.new(seedHandler)
 	generator = ProceduralGenerator.new(config)
-	offset = Vector2(-config.cellNumber, -config.cellNumber) * cell_scale + Vector2(500,350)
+	offset = Vector2(-config.cellNumber, -config.cellNumber) * cell_scale + Vector2(500,400)
 
 	start = Time.get_ticks_usec()
 	generator.create()

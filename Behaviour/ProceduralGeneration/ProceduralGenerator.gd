@@ -156,10 +156,14 @@ func placeRoomIfPossible(frontierIndex: int) -> bool:
 		# Avoid overshooting the max cell number
 		if cellCount + size * size > cellNumber:
 			continue
-		var coef = roomCoefficient[size][0]
-		var maxRooms = roomCoefficient[size][1]
+		var roomConfig = roomCoefficient[size]
+		var threshold = roomConfig[2]
+		if graphBuildProgression <= threshold:
+			continue
+		var maxRooms = roomConfig[1]
 		if roomCounts[size] >= maxRooms:
 			continue
+		var coef = roomConfig[0]
 		if rng.randf() > coef:
 			continue
 		if canPlaceRoomXY(cx, cy, size):
