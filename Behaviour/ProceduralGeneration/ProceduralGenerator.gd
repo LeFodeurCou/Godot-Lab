@@ -13,26 +13,45 @@ var cellKey := PackedInt64Array()
 var cellStructureType: Array = PackedByteArray()
 var cellCount: int = 1
 
+# graph internal values
 var grid:= {}
 var frontier: Array = []
-var config: ProceduralGeneratorConfig
-var rng: RandomGenerator
-var roomCounts:= {}
+var graphBuildProgression: float = 0.0
 
+var config: ProceduralGeneratorConfig
+# Values from config
+var cellNumber: int
+var isStrictMaze: bool
+var frontierDecay: float
+var directionMomentum: float
+var corridorCoefficient:float
+var rng: RandomGenerator
+var roomCoefficient: Dictionary
+var roomSizes: Array
+var roomCounts:= {}
+var loopChance: float
+var canLoopDoubleCheck: float
+
+# Directions
 const DIR_TOP = 0
 const DIR_RIGHT = 1
 const DIR_DOWN = 2
 const DIR_LEFT = 3
 
-# Directions are from 0 to 3
-const DX = [0, 1, 0, -1] # Direction on axe x
-const DY = [-1, 0, 1, 0] # Direction on axe y
+# Direction on axe x
+# DX[DIR_DOWN] = 0
+const DX = [0, 1, 0, -1]
+# Direction on axe y
+# DY[DIR_DOWN] = 1
+const DY = [-1, 0, 1, 0]
+
 # Opposinte Direction indexes
 # DX[DOPP[1]] == DX[3]
 # DY[DOPP[2]] == DY[0]
 # dir = 0 (Top), DOPP[dir] = 2 (Bottom)
 const DOPP = [2, 3, 0, 1] 
 
+# Used to compute the adjacent key in the grid
 const KEY_DIR = [
 	-1,           # up    (y - 1)
 	1 << 32,      # right (x + 1)
@@ -41,8 +60,29 @@ const KEY_DIR = [
 ]
 
 func _init(inputConfig: ProceduralGeneratorConfig):
+	# Internal values cler
+	frontier.clear()
+	grid.clear()
+	
+	# Config calues clear
+	roomCoefficient.clear()
+	roomSizes.clear()
+	roomCounts.clear()
+	
+	# Config initialization to avoid dereferences
 	config = inputConfig
-	rng = config.seedHandler.dungeonRng.call(config.id)
+	rng = inputConfig.seedHandler.dungeonRng.call(inputConfig.id)
+	cellNumber = inputConfig.cellNumber
+	isStrictMaze = inputConfig.isStrictMaze
+	frontierDecay = inputConfig.frontierDecay
+	directionMomentum = inputConfig.directionMomentum
+	corridorCoefficient = inputConfig.corridorCoefficient
+	roomCoefficient = inputConfig.roomCoefficient
+	roomSizes = inputConfig.roomSizes
+	for size in roomSizes:
+		roomCounts[size] = 0
+	loopChance = inputConfig.loopChance
+	canLoopDoubleCheck = inputConfig.canLoopDoubleCheck
 	
 	# SoA Cell clear
 	cellX.clear()
@@ -55,33 +95,26 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 	cellStructureType.clear()
 	
 	# SoA Cell init size
-	cellX.resize(config.cellNumber)
-	cellY.resize(config.cellNumber)
-	cellDirection.resize(config.cellNumber)
-	cellNeighbors.resize(config.cellNumber * 4)
+	cellX.resize(cellNumber)
+	cellY.resize(cellNumber)
+	cellDirection.resize(cellNumber)
+	cellNeighbors.resize(cellNumber * 4)
 	cellNeighbors.fill(-1)
-	cellHeat.resize(config.cellNumber)
-	cellSocketMask.resize(config.cellNumber)
-	cellKey.resize(config.cellNumber)
-	cellStructureType.resize(config.cellNumber)
+	cellHeat.resize(cellNumber)
+	cellSocketMask.resize(cellNumber)
+	cellKey.resize(cellNumber)
+	cellStructureType.resize(cellNumber)
 	
 	# Soa Cell init values
 	cellDirection.fill(-1)
 	cellHeat.fill(-1)
 	cellSocketMask.fill(0)
-	
-	frontier.clear()
-	roomCounts.clear()
-	grid.clear()
-	
-	for size in config.roomSizes:
-		roomCounts[size] = 0
 
 func create() -> void:
 	# First SoA Cell
-	cellX[0] = config.cellNumber
-	cellY[0] = config.cellNumber
-	var startKey = key(config.cellNumber, config.cellNumber)
+	cellX[0] = cellNumber
+	cellY[0] = cellNumber
+	var startKey = key(cellNumber, cellNumber)
 	cellKey[0] = startKey
 	grid[startKey] = 0
 	frontier.append(0)
@@ -89,7 +122,7 @@ func create() -> void:
 	# First phase : graph generation
 	var frontierIndex
 	# Here we check frontier size to avoid pathological seeds
-	while cellCount < config.cellNumber and frontier.size() > 0:
+	while cellCount < cellNumber and frontier.size() > 0:
 		var frontierSize = frontier.size()
 		if frontierSize == 1:
 			# Take the last frontier it stay after some was removed
@@ -102,22 +135,26 @@ func create() -> void:
 			frontierIndex = rng.randi(0, frontierSize - 1)
 		if(!placeRoomIfPossible(frontierIndex)):
 			placeNeighborCell(frontierIndex)
+		graphBuildProgression = float(cellCount) / cellNumber
 
 	# Second phase : optional loops and heat computation
 	socketRandomConnecter()
 	recomputeHeat()
+	
+	# Clean memory when generation ends
 	grid.clear()
+	frontier.clear()
 
 func placeRoomIfPossible(frontierIndex: int) -> bool:
 	var cellIndex = frontier[frontierIndex]
 	var cx = cellX[cellIndex]
 	var cy = cellY[cellIndex]
-	for size in config.roomSizes:
+	for size in roomSizes:
 		# Avoid overshooting the max cell number
-		if cellCount + size * size > config.cellNumber:
+		if cellCount + size * size > cellNumber:
 			continue
-		var coef = config.roomCoefficient[size][0]
-		var maxRooms = config.roomCoefficient[size][1]
+		var coef = roomCoefficient[size][0]
+		var maxRooms = roomCoefficient[size][1]
 		if roomCounts[size] >= maxRooms:
 			continue
 		if rng.randf() > coef:
@@ -191,7 +228,7 @@ func placeNeighborCell(frontierIndex: int) -> void:
 	var startDir = rng.randi(0, 3)
 	for i in 4:
 		var dir = (startDir + i) & 3
-		if cellDirection[cellIndex] != -1 and i == 0 and rng.randf() < config.directionMomentum:
+		if cellDirection[cellIndex] != -1 and i == 0 and rng.randf() < directionMomentum:
 			dir = cellDirection[cellIndex]
 		var px = cx + DX[dir]
 		var py = cy + DY[dir]
@@ -201,7 +238,7 @@ func placeNeighborCell(frontierIndex: int) -> void:
 		for ndir in 4:
 			if grid.has(key(px + DX[ndir],  py + DY[ndir])):
 				neighborCount += 1
-		if !grid.has(gridKey) and (not config.isStrictMaze or neighborCount <= 1):
+		if !grid.has(gridKey) and (not isStrictMaze or neighborCount <= 1):
 			frontierDecayRandomizer()
 			var newCellIndex = cellCount
 			cellX[newCellIndex] = px
@@ -217,7 +254,7 @@ func placeNeighborCell(frontierIndex: int) -> void:
 	
 func frontierDecayRandomizer() -> void:
 	var frontierSize = frontier.size()
-	if frontierSize > 1 and rng.randf() < config.frontierDecay:
+	if frontierSize > 1 and rng.randf() < frontierDecay:
 		frontierRemove(
 			rng.randi(0, frontierSize - 1)
 		)
@@ -229,16 +266,16 @@ func frontierRemove(i):
 	frontier.pop_back()
 
 func socketRandomConnecter() -> void:
-	if 0 >= config.loopChance:
+	if 0 >= loopChance:
 		return;
 	for idx in range(cellCount):
 		for dir in 4:
 			# Avoid double check
-			if !config.canLoopDoubleCheck and (dir == DIR_LEFT or dir == DIR_RIGHT):
+			if !canLoopDoubleCheck and (dir == DIR_LEFT or dir == DIR_RIGHT):
 				continue
 			if cellSocketMask[idx] & (1 << dir):
 				continue
-			if rng.randf() >= config.loopChance:
+			if rng.randf() >= loopChance:
 				continue
 			var neighborIndex = cellNeighbors[idx*4+dir]
 			if -1 != neighborIndex:
