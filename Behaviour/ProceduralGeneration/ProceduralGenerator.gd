@@ -19,9 +19,19 @@ var config: ProceduralGeneratorConfig
 var rng: RandomGenerator
 var roomCounts:= {}
 
-const DX = Directions.DIR_X
-const DY = Directions.DIR_Y
-const DOPP = Directions.OPP
+const DIR_TOP = 0
+const DIR_RIGHT = 1
+const DIR_DOWN = 2
+const DIR_LEFT = 3
+
+# Directions are from 0 to 3
+const DX = [0, 1, 0, -1] # Direction on axe x
+const DY = [-1, 0, 1, 0] # Direction on axe y
+# Opposinte Direction indexes
+# DX[DOPP[1]] == DX[3]
+# DY[DOPP[2]] == DY[0]
+# dir = 0 (Top), DOPP[dir] = 2 (Bottom)
+const DOPP = [2, 3, 0, 1] 
 
 const KEY_DIR = [
 	-1,           # up    (y - 1)
@@ -224,7 +234,7 @@ func socketRandomConnecter() -> void:
 	for idx in range(cellCount):
 		for dir in 4:
 			# Avoid double check
-			if !config.canLoopDoubleCheck and (dir == Directions.DIR_LEFT or dir == Directions.DIR_RIGHT):
+			if !config.canLoopDoubleCheck and (dir == DIR_LEFT or dir == DIR_RIGHT):
 				continue
 			if cellSocketMask[idx] & (1 << dir):
 				continue
