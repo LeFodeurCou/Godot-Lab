@@ -11,12 +11,12 @@ var cellHeat: Array = PackedInt32Array()
 var cellSocketMask: Array = PackedByteArray()
 var cellKey := PackedInt64Array()
 var cellStructureType: Array = PackedByteArray()
-var cellCount: int = 1
 
-# graph internal values
-var grid:= {}
-var frontier: Array = []
-var graphBuildProgression: float = 0.0
+# Internal values
+var grid: Dictionary
+var frontier: Array
+var cellCount: int
+var graphBuildProgression: float
 
 var config: ProceduralGeneratorConfig
 # Values from config
@@ -28,7 +28,7 @@ var corridorCoefficient:float
 var rng: RandomGenerator
 var roomCoefficient: Dictionary
 var roomSizes: Array
-var roomCounts:= {}
+var roomCounts: Dictionary
 var loopChance: float
 var canLoopDoubleCheck: float
 
@@ -60,17 +60,13 @@ const KEY_DIR = [
 ]
 
 func _init(inputConfig: ProceduralGeneratorConfig):
-	# Internal values cler
-	frontier.clear()
-	grid.clear()
-	
-	# Config calues clear
-	roomCoefficient.clear()
-	roomSizes.clear()
-	roomCounts.clear()
-	
-	# Config initialization to avoid dereferences
-	config = inputConfig
+	# Always configInit first !!!
+	configInit(inputConfig)
+	soaClearAndInit()
+	internalValuesInit()
+
+# Config initialization to avoid dereferences
+func configInit(inputConfig: ProceduralGeneratorConfig) -> void:
 	rng = inputConfig.seedHandler.dungeonRng.call(inputConfig.id)
 	cellNumber = inputConfig.cellNumber
 	isStrictMaze = inputConfig.isStrictMaze
@@ -79,11 +75,13 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 	corridorCoefficient = inputConfig.corridorCoefficient
 	roomCoefficient = inputConfig.roomCoefficient
 	roomSizes = inputConfig.roomSizes
+	roomCounts = {}
 	for size in roomSizes:
 		roomCounts[size] = 0
 	loopChance = inputConfig.loopChance
 	canLoopDoubleCheck = inputConfig.canLoopDoubleCheck
-	
+
+func soaClearAndInit() -> void:
 	# SoA Cell clear
 	cellX.clear()
 	cellY.clear()
@@ -109,6 +107,13 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 	cellDirection.fill(-1)
 	cellHeat.fill(-1)
 	cellSocketMask.fill(0)
+	
+# Internal values initialization (avoid memory leak)
+func internalValuesInit() -> void:
+	grid = {}
+	frontier = []
+	cellCount = 1
+	graphBuildProgression = 0.0
 
 func create() -> void:
 	# First SoA Cell
@@ -141,9 +146,7 @@ func create() -> void:
 	socketRandomConnecter()
 	recomputeHeat()
 	
-	# Clean memory when generation ends
-	grid.clear()
-	frontier.clear()
+	clearMemory()
 
 func placeRoomIfPossible(frontierIndex: int) -> bool:
 	var cellIndex = frontier[frontierIndex]
@@ -318,3 +321,16 @@ func recomputeHeat():
 # null != grid.get(key(x, y), null)
 func key(x:int, y:int) -> int:
 	return (x << 32) | (y & 0xffffffff)
+
+# Used in the creat() method at the end to free memory after generatoin ends
+# NEVER clear any SoA value here to avoid external bugs :
+# SoA value will be used outside the generator by some renderer
+func clearMemory() -> void:
+	# Internal values clear
+	frontier.clear()
+	grid.clear()
+	
+	# Config values clear
+	roomCoefficient.clear()
+	roomSizes.clear()
+	roomCounts.clear()
