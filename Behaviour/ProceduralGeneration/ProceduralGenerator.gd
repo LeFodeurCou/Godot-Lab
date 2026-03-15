@@ -17,6 +17,12 @@ var grid: Dictionary
 var frontier: Array
 var cellCount: int
 var graphBuildProgression: float
+# Noise bias direction
+var dirNoise := FastNoiseLite.new()
+# Perlin noise
+var biomeNoise := FastNoiseLite.new()
+# heat distribution
+var expectedMaxHeat: float
 
 var config: ProceduralGeneratorConfig
 # Values from config
@@ -24,13 +30,15 @@ var cellNumber: int
 var isStrictMaze: bool
 var frontierDecay: float
 var directionMomentum: float
-var corridorCoefficient:float
 var rng: RandomGenerator
 var roomCoefficient: Dictionary
 var roomSizes: Array
 var roomCounts: Dictionary
 var loopChance: float
 var canLoopDoubleCheck: float
+var globalDirectionBias:= PackedFloat32Array()
+var globalBiasStrength: float
+var noiseBiasStrength: float
 
 # Directions
 const DIR_TOP = 0
@@ -72,7 +80,6 @@ func configInit(inputConfig: ProceduralGeneratorConfig) -> void:
 	isStrictMaze = inputConfig.isStrictMaze
 	frontierDecay = inputConfig.frontierDecay
 	directionMomentum = inputConfig.directionMomentum
-	corridorCoefficient = inputConfig.corridorCoefficient
 	roomCoefficient = inputConfig.roomCoefficient
 	roomSizes = inputConfig.roomSizes
 	roomCounts = {}
@@ -80,6 +87,9 @@ func configInit(inputConfig: ProceduralGeneratorConfig) -> void:
 		roomCounts[size] = 0
 	loopChance = inputConfig.loopChance
 	canLoopDoubleCheck = inputConfig.canLoopDoubleCheck
+	globalDirectionBias = inputConfig.globalDirectionBias
+	globalBiasStrength = inputConfig.globalBiasStrength
+	noiseBiasStrength = inputConfig.noiseBiasStrength
 
 func soaClearAndInit() -> void:
 	# SoA Cell clear
@@ -114,6 +124,14 @@ func internalValuesInit() -> void:
 	frontier = []
 	cellCount = 1
 	graphBuildProgression = 0.0
+	# Noise direction setup
+	dirNoise.seed = rng.randi(0, 2147483647) # 2147483647 is the max int possible
+	dirNoise.frequency = 0.05
+	# Perlin noise setup
+	biomeNoise.seed = rng.randi(0, 2147483647)
+	biomeNoise.frequency = 0.02
+	# maxHeat approximation
+	expectedMaxHeat = sqrt(cellNumber) * 2
 
 func create() -> void:
 	# First SoA Cell
@@ -128,19 +146,21 @@ func create() -> void:
 	var frontierIndex
 	# Here we check frontier size to avoid pathological seeds
 	while cellCount < cellNumber and frontier.size() > 0:
+		graphBuildProgression = float(cellCount) / float(cellNumber)
 		var frontierSize = frontier.size()
-		if frontierSize == 1:
-			# Take the last frontier it stay after some was removed
-			frontierIndex = 0
-		elif rng.randf() < 0.9:
+		#Branch Depth Bias
+		var r = rng.randf()
+		if r < 0.6:
 			# Take the last frontier cell
-			frontierIndex = frontierSize - 1
-		else:
+			frontierIndex = frontierSize - 1     # continue branch
+		elif r < 0.85:
 			# Take a random frontier cell
 			frontierIndex = rng.randi(0, frontierSize - 1)
+		else:
+			# Take the oldest frontier made
+			frontierIndex = int(frontierSize * rng.randf() * rng.randf())
 		if(!placeRoomIfPossible(frontierIndex)):
 			placeNeighborCell(frontierIndex)
-		graphBuildProgression = float(cellCount) / cellNumber
 
 	# Second phase : optional loops and heat computation
 	socketRandomConnecter()
@@ -157,8 +177,11 @@ func placeRoomIfPossible(frontierIndex: int) -> bool:
 		if cellCount + size * size > cellNumber:
 			continue
 		var roomConfig = roomCoefficient[size]
-		var threshold = roomConfig[2]
-		if graphBuildProgression <= threshold:
+		var biome = (biomeNoise.get_noise_2d(cx, cy) + 1.0) *0.5
+		var heatRatio = float(cellHeat[cellIndex] + 1) / expectedMaxHeat
+		var heatMin = roomConfig[3] * biome
+		var threshold = roomConfig[2] * biome
+		if graphBuildProgression <= threshold or heatMin <= heatRatio:
 			continue
 		var maxRooms = roomConfig[1]
 		if roomCounts[size] >= maxRooms:
@@ -232,20 +255,23 @@ func placeNeighborCell(frontierIndex: int) -> void:
 	var cx = cellX[cellIndex]
 	var cy = cellY[cellIndex]
 	# O(1) Cyclic direction to avoid a O(n) shuffle
-	var startDir = rng.randi(0, 3)
+	var startDir = rng.randi(0, 3) # remove after direction bias done
 	for i in 4:
 		var dir = (startDir + i) & 3
-		if cellDirection[cellIndex] != -1 and i == 0 and rng.randf() < directionMomentum:
-			dir = cellDirection[cellIndex]
-		var px = cx + DX[dir]
-		var py = cy + DY[dir]
 		var gridKey = cellKey[cellIndex] + KEY_DIR[dir]
+		if (grid.has(gridKey)):
+			continue
 		# countNeighbors inlined here
 		var neighborCount = 0
 		for ndir in 4:
-			if grid.has(key(px + DX[ndir],  py + DY[ndir])):
+			if grid.has(gridKey + KEY_DIR[ndir]):
 				neighborCount += 1
-		if !grid.has(gridKey) and (not isStrictMaze or neighborCount <= 1):
+		if isStrictMaze and neighborCount > 1:
+			continue
+		var px = cx + DX[dir]
+		var py = cy + DY[dir]
+		var weight = directionWeight(dir, px, py, cellDirection[cellIndex])
+		if rng.randf() < weight:
 			frontierDecayRandomizer()
 			var newCellIndex = cellCount
 			cellX[newCellIndex] = px
@@ -258,7 +284,22 @@ func placeNeighborCell(frontierIndex: int) -> void:
 			connectCellToCell(cellIndex, newCellIndex, dir)
 			return
 	frontierRemove(frontierIndex)
-	
+
+func directionWeight(dir:int, cx: int, cy: int, prevDir: int) -> float:
+	var weight := 1.0
+	var dirX = DX[dir]
+	var dirY = DY[dir]
+	weight += (
+		dirX * globalDirectionBias[0] +
+		dirY * globalDirectionBias[1]
+	) * globalBiasStrength + (
+		dirX * dirNoise.get_noise_2d(cx, cy) +
+		dirY * dirNoise.get_noise_2d(cx + 1000, cy + 1000)
+	) * noiseBiasStrength
+	if dir == prevDir:
+		weight += directionMomentum
+	return max(weight, 0.05)
+
 func frontierDecayRandomizer() -> void:
 	var frontierSize = frontier.size()
 	if frontierSize > 1 and rng.randf() < frontierDecay:
@@ -338,3 +379,4 @@ func clearMemory() -> void:
 	roomCoefficient.clear()
 	roomSizes.clear()
 	roomCounts.clear()
+	globalDirectionBias.clear()
