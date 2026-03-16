@@ -10,8 +10,22 @@ var seedHandler: SeedHandler
 # 10K ~150ms
 # 100K ~1.5s
 # 1M ~16s
-var cellNumber: int = 150
+#var cellNumber: int = 1024
+#var cellNumber: int = 16*16 # Minecraft logic
+var cellNumber: int = 16*16*4 # also Minecraft logic but bigger
 #var cellNumber: int = 10000000 # Hardest stress test
+
+# Zone config
+var isFilled = false
+var shapes = {
+	'circle': Callable(self, 'circle'),
+	'square': Callable(self, 'square'),
+	'diamond': Callable(self, 'diamond')
+}
+var shape: Callable = shapes['square']
+# Used to precompute sqrt(cellNumber) for square and circle shapes
+var radius
+
 # true : more corridor maze by counting neighbors
 # false : more blob maze (no neighbors count)
 var isStrictMaze: bool = true
@@ -53,4 +67,41 @@ var canLoopDoubleCheck: float = false # false is more optimized but lead to less
 
 func _init(seedHandlerInput: SeedHandler):
 	seedHandler = seedHandlerInput
-	roomSizes = roomCoefficient.keys()
+	if isFilled:
+		radius = sqrt(cellNumber)
+		isStrictMaze = false
+		frontierDecay = 0.0
+		directionMomentum = 0.0
+		roomCoefficient = {}
+		roomSizes = []
+		globalDirectionBias = [0, 0]
+		globalBiasStrength = 0.0
+		noiseBiasStrength = 0.0
+		loopChance = 0.0
+		canLoopDoubleCheck = false
+	else:
+		roomSizes = roomCoefficient.keys()
+
+# Shape utilities
+func circle(x:int, y:int) -> bool:
+	var lx = x - cellNumber
+	var ly = y - cellNumber
+	
+	var r = int((radius - 1) * 0.5)
+	return lx * lx + ly * ly <= r * r
+	
+func square(x:int, y:int) -> bool:
+	# TODO see if r can be a little more to avoid dead cells from cellNumber
+	# TODO see if we can make even squares, for now it's mandatory odd with the origin as center
+	var lx = x - cellNumber
+	var ly = y - cellNumber
+	
+	var r = int((radius - 1) * 0.5)
+	return abs(lx) <= r and abs(ly) <= r
+	
+func diamond(x:int, y:int) -> bool:
+	var lx = x - cellNumber
+	var ly = y - cellNumber
+	
+	var r = int((sqrt(2.0 * cellNumber - 1.0) - 1.0) * 0.5)
+	return abs(lx) + abs(ly) <= r

@@ -25,6 +25,8 @@ var biomeNoise := FastNoiseLite.new()
 var config: ProceduralGeneratorConfig
 # Values from config
 var cellNumber: int
+var isFilled: bool
+var shape: Callable
 var isStrictMaze: bool
 var frontierDecay: float
 var directionMomentum: float
@@ -75,6 +77,8 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 func configInit(inputConfig: ProceduralGeneratorConfig) -> void:
 	rng = inputConfig.seedHandler.dungeonRng.call(inputConfig.id)
 	cellNumber = inputConfig.cellNumber
+	isFilled = inputConfig.isFilled
+	shape = inputConfig.shape
 	isStrictMaze = inputConfig.isStrictMaze
 	frontierDecay = inputConfig.frontierDecay
 	directionMomentum = inputConfig.directionMomentum
@@ -146,12 +150,14 @@ func create() -> void:
 		var frontierSize = frontier.size()
 		# Branch Depth Bias
 		var r = rng.randf()
-		if r < 0.6:
+		if isFilled or r < 0.6:
 			# Take the last frontier cell
-			frontierIndex = frontierSize - 1     # continue branch
+			frontierIndex = frontierSize - 1
 		elif r < 0.85:
-			# Take a random frontier cell
-			frontierIndex = rng.randi(0, frontierSize - 1)
+			## Take a random frontier cell
+			#frontierIndex = rng.randi(0, frontierSize - 1)
+			# Take a frontier by entropy, meaning less socketed are priorized
+			frontierIndex = highestEntropyFrontier(frontierSize)
 		else:
 			# Take the oldest frontier made
 			frontierIndex = int(frontierSize * rng.randf() * rng.randf())
@@ -164,7 +170,22 @@ func create() -> void:
 	
 	clearMemory()
 
+func highestEntropyFrontier(frontierSize: int)-> int:
+	var bestIndex = -1
+	# 64 because 63 in binary represent 111111 which means socket for 6 directions
+	# 6 directions is made for 3D plan, x/-x, y/-y and z/-z
+	var bestEntropy = 64
+	for i in 5:
+		var fi = rng.randi(0, frontierSize-1)
+		var e = cellSocketMask[frontier[fi]]
+		if e < bestEntropy:
+			bestEntropy = e
+			bestIndex = fi
+	return bestIndex
+
 func placeRoomIfPossible(frontierIndex: int) -> bool:
+	if (isFilled):
+		return false
 	var cellIndex = frontier[frontierIndex]
 	var cx = cellX[cellIndex]
 	var cy = cellY[cellIndex]
@@ -245,6 +266,15 @@ func connectCellToCell(idxCellSource: int, idxCellTarget: int, dir: int):
 	cellNeighbors[idxCellSource * 4 + dir] = idxCellTarget
 	cellNeighbors[idxCellTarget * 4 + opp] = idxCellSource
 
+func connectAllNeighbors(cellIndex:int) -> void:
+	var k = cellKey[cellIndex]
+	for dir in 4:
+		var neighborKey = k + KEY_DIR[dir]
+		if !grid.has(neighborKey):
+			continue
+		var neighborIndex = grid[neighborKey]
+		connectCellToCell(cellIndex, neighborIndex, dir)
+
 func placeNeighborCell(frontierIndex: int) -> void:
 	var cellIndex = frontier[frontierIndex]
 	var cx = cellX[cellIndex]
@@ -256,19 +286,22 @@ func placeNeighborCell(frontierIndex: int) -> void:
 		var gridKey = cellKey[cellIndex] + KEY_DIR[dir]
 		if (grid.has(gridKey)):
 			continue
-		# countNeighbors inlined here
-		var neighborCount = 0
-		for ndir in 4:
-			if grid.has(gridKey + KEY_DIR[ndir]):
-				neighborCount += 1
-				if neighborCount > 1:
-					break
-		if isStrictMaze and neighborCount > 1:
-			continue
+		if !isFilled:
+			# countNeighbors inlined here
+			var neighborCount = 0
+			for ndir in 4:
+				if grid.has(gridKey + KEY_DIR[ndir]):
+					neighborCount += 1
+					if neighborCount > 1:
+						break
+			if isStrictMaze and neighborCount > 1:
+				continue
 		var px = cx + DX[dir]
 		var py = cy + DY[dir]
+		if isFilled and !shape.call(px, py):
+			continue
 		var weight = directionWeight(dir, px, py, cellDirection[cellIndex])
-		if rng.randf() < weight:
+		if isFilled or rng.randf() < weight:
 			frontierDecayRandomizer()
 			var newCellIndex = cellCount
 			cellX[newCellIndex] = px
@@ -278,7 +311,10 @@ func placeNeighborCell(frontierIndex: int) -> void:
 			cellKey[newCellIndex] = gridKey
 			cellCount += 1;
 			frontier.append(newCellIndex)
-			connectCellToCell(cellIndex, newCellIndex, dir)
+			if isFilled:
+				connectAllNeighbors(newCellIndex)
+			else:
+				connectCellToCell(cellIndex, newCellIndex, dir)
 			return
 	frontierRemove(frontierIndex)
 
