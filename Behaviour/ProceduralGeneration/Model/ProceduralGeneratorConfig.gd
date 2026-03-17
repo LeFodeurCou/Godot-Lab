@@ -4,6 +4,7 @@ class_name ProceduralGeneratorConfig
 
 var id: Variant = "myFirstProceduralMaze"
 var seedHandler: SeedHandler
+var rng: RandomGenerator
 # max cellNumber limit tested 10M
 # 100 ~1-2+ ms
 # 1000 ~15-20ms
@@ -11,8 +12,8 @@ var seedHandler: SeedHandler
 # 100K ~1.5s
 # 1M ~16s
 #var cellNumber: int = 1024
-#var cellNumber: int = 16*16 # Minecraft logic
-var cellNumber: int = 16*16*4 # also Minecraft logic but bigger
+var cellNumber: int = 16*16 # Minecraft logic
+#var cellNumber: int = 16*16*4 # also Minecraft logic but bigger
 #var cellNumber: int = 10000000 # Hardest stress test
 
 # Zone config
@@ -25,6 +26,10 @@ var shapes = {
 var shape: Callable = shapes['square']
 # Used to precompute sqrt(cellNumber) for square and circle shapes
 var radius
+var side: int
+var half: int
+var squareOffsetX: int
+var squareOffsetY: int
 
 # true : more corridor maze by counting neighbors
 # false : more blob maze (no neighbors count)
@@ -46,7 +51,7 @@ var roomCoefficient: Dictionary = {
 	],
 	3: [
 		0.3, 
-		4, 
+		10, 
 		0.3,
 	],
 } # 0.05 of cells can become a room candidate
@@ -67,8 +72,14 @@ var canLoopDoubleCheck: float = false # false is more optimized but lead to less
 
 func _init(seedHandlerInput: SeedHandler):
 	seedHandler = seedHandlerInput
+	# TODO find a way to configure it
+	rng = seedHandler.dungeonRng.call(id)
 	if isFilled:
 		radius = sqrt(cellNumber)
+		side = int(floor(radius))
+		half = side >> 1
+		squareOffsetX = rng.randi(0, 1)
+		squareOffsetY = rng.randi(0, 1)
 		isStrictMaze = false
 		frontierDecay = 0.0
 		directionMomentum = 0.0
@@ -90,14 +101,29 @@ func circle(x:int, y:int) -> bool:
 	var r = int((radius - 1) * 0.5)
 	return lx * lx + ly * ly <= r * r
 	
+#func square(x:int, y:int) -> bool:
+	## TODO see if r can be a little more to avoid dead cells from cellNumber
+	## TODO see if we can make even squares, for now it's mandatory odd with the origin as center
+	#var lx = x - cellNumber
+	#var ly = y - cellNumber
+	#
+	#var r = int((radius - 1) * 0.5)
+	#return abs(lx) <= r and abs(ly) <= r
+	
 func square(x:int, y:int) -> bool:
-	# TODO see if r can be a little more to avoid dead cells from cellNumber
-	# TODO see if we can make even squares, for now it's mandatory odd with the origin as center
 	var lx = x - cellNumber
 	var ly = y - cellNumber
-	
-	var r = int((radius - 1) * 0.5)
-	return abs(lx) <= r and abs(ly) <= r
+	if side % 2 == 1:
+		# odd → centered
+		return abs(x) <= half and abs(y) <= half
+	else:
+		# even → shifted
+		return (
+			lx >= -half + squareOffsetX and
+			lx <  half + squareOffsetX and
+			ly >= -half + squareOffsetY and
+			ly <  half + squareOffsetY
+		)
 	
 func diamond(x:int, y:int) -> bool:
 	var lx = x - cellNumber

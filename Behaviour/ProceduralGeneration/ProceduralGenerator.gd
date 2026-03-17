@@ -75,7 +75,7 @@ func _init(inputConfig: ProceduralGeneratorConfig):
 
 # Config initialization to avoid dereferences
 func configInit(inputConfig: ProceduralGeneratorConfig) -> void:
-	rng = inputConfig.seedHandler.dungeonRng.call(inputConfig.id)
+	rng = inputConfig.rng
 	cellNumber = inputConfig.cellNumber
 	isFilled = inputConfig.isFilled
 	shape = inputConfig.shape

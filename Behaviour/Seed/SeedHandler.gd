@@ -7,6 +7,7 @@ var dungeonRng: Callable
 var lootRng: Callable
 var villageRng: Callable
 var caveRng: Callable
+var randomRng: Callable
 # TODO add or remove some to have as many RNG as we need here
 	
 func _init(originSeed: Variant):
@@ -29,4 +30,8 @@ func _init(originSeed: Variant):
 	terrainRng = func(localSeed: Variant) -> RandomGenerator:
 		return RandomGenerator.new(
 			hash(str(originSeed, "cave", localSeed))
+		)
+	randomRng = func(localSeed: Variant) -> RandomGenerator:
+		return RandomGenerator.new(
+			hash(str(originSeed, "random", localSeed))
 		)

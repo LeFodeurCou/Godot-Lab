@@ -43,7 +43,7 @@ func positionalRng(x:int, y:int, originSeed:int) -> int:
 	# final avalanche mixing
 	return h ^ (h >> 16)
 
-# Usage if positional_randf(cx,cy,seed) < 0.1:
+# Usage if positionalRandf(cx,cy,seed) < 0.1:
 #	spawn_loot()
 func positionalRandf(x:int, y:int, originSeed:int) -> float:
 	var r = positionalRng(x,y,originSeed)
