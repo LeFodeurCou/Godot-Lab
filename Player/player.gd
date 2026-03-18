@@ -1,12 +1,23 @@
 extends CharacterBody3D
 
 @export var speed = 14
-
 @export var fall_acceleration = 75
-
 @export var jump_impulse = 20
-
 var target_velocity = Vector3.ZERO
+
+var cameras: Array[Camera3D]
+var currentCameraIdx: int = 0
+
+func _ready():
+	cameras = [
+		$CameraPivot/CameraBasic,
+		$CameraPivot/CameraFP,
+		$CameraPivot/CameraTP, # TODO prevent camera going through walls
+		$CameraPivot/CameraTop,
+		$CameraPivot/CameraTactical,
+		$CameraPivot/CameraCinematic
+	]
+	set_active_camera(0)
 
 func _physics_process(delta):
 	# We create a local variable to store the input direction.
@@ -44,3 +55,24 @@ func _physics_process(delta):
 	# Moving the Character
 	velocity = target_velocity
 	move_and_slide()
+
+func _input(event):
+	if event.is_action_pressed("camera_switch"):
+		currentCameraIdx = (currentCameraIdx + 1) % cameras.size()
+		set_active_camera(currentCameraIdx)
+		
+func set_active_camera(idx:int):
+	for i in range(cameras.size()):
+		## TODO those two next lines can be used to make a transition between cameras
+		#var tween = create_tween()
+		#tween.tween_property(camera, "global_transform", target_transform, 0.5)
+		cameras[i].current = (i == idx)
+		if i == idx and i == cameras.size() - 1:
+			cameras[i].position = cameras[0].position
+			cameras[i].rotation = cameras[0].rotation
+			var tween = create_tween()
+			tween.tween_property($CameraPivot/CameraCinematic, "position", Vector3(10,200,200), 5)
+			#tween.tween_property($CameraPivot/CameraCinematic, "position", Vector3(0,200,200), 5)
+			#tween.finished.connect(func():
+				#set_active_camera(0)
+			#)

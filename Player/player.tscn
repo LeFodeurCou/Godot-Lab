@@ -18,6 +18,22 @@ script = ExtResource("1_onrkg")
 shape = SubResource("SphereShape3D_4flbx")
 
 [node name="CameraPivot" type="Marker3D" parent="." unique_id=1179431997]
-transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.7071067, 0, -0.7071067, 0.70710677, 0, 20, 20)
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
 
-[node name="Camera3D" type="Camera3D" parent="CameraPivot" unique_id=1948342054]
+[node name="CameraBasic" type="Camera3D" parent="CameraPivot" unique_id=1948342054]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 20, 20)
+
+[node name="CameraFP" type="Camera3D" parent="CameraPivot" unique_id=45629616]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="CameraTP" type="Camera3D" parent="CameraPivot" unique_id=995668447]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, -6)
+metadata/look_at = Vector3(0, 0, 0)
+
+[node name="CameraTop" type="Camera3D" parent="CameraPivot" unique_id=1738941366]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 15, -10)
+
+[node name="CameraTactical" type="Camera3D" parent="CameraPivot" unique_id=2063157521]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 25, 0)
+
+[node name="CameraCinematic" type="Camera3D" parent="CameraPivot" unique_id=449455009]
