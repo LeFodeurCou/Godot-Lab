@@ -2,6 +2,9 @@
 
 [ext_resource type="PackedScene" uid="uid://d0ypm0v45pwdv" path="res://art/player.glb" id="1_4flbx"]
 [ext_resource type="Script" uid="uid://ci8y6rim3vfcq" path="res://Player/player.gd" id="1_onrkg"]
+[ext_resource type="Script" uid="uid://diyhwf47k61ge" path="res://Player/CameraBasicControler.gd" id="3_btcbx"]
+[ext_resource type="Script" uid="uid://boky37deu0ogg" path="res://Player/CameraFPController.gd" id="4_gwnis"]
+[ext_resource type="Script" uid="uid://caoojdatbsqwl" path="res://Player/CameraTPController.gd" id="5_k53q1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_4flbx"]
 radius = 0.8
@@ -21,19 +24,18 @@ shape = SubResource("SphereShape3D_4flbx")
 transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
 
 [node name="CameraBasic" type="Camera3D" parent="CameraPivot" unique_id=1948342054]
-transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 20, 20)
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
+script = ExtResource("3_btcbx")
 
 [node name="CameraFP" type="Camera3D" parent="CameraPivot" unique_id=45629616]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+script = ExtResource("4_gwnis")
 
 [node name="CameraTP" type="Camera3D" parent="CameraPivot" unique_id=995668447]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, -6)
-metadata/look_at = Vector3(0, 0, 0)
+script = ExtResource("5_k53q1")
 
 [node name="CameraTop" type="Camera3D" parent="CameraPivot" unique_id=1738941366]
-transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 15, -10)
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
 
 [node name="CameraTactical" type="Camera3D" parent="CameraPivot" unique_id=2063157521]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 25, 0)
 
 [node name="CameraCinematic" type="Camera3D" parent="CameraPivot" unique_id=449455009]

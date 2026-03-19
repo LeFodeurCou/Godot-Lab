@@ -1,0 +1,25 @@
+extends Camera3D
+
+func _ready() -> void:
+	self.position = Vector3(0, 20, 20)
+	self.rotation_degrees = Vector3(-45, 0, 0)
+
+func playerProcess(player: CharacterBody3D, playerPivot: Node3D) -> void:
+	var inputDir = Vector3.ZERO
+	if Input.is_action_pressed("move_right"):
+		inputDir.x += 1
+	if Input.is_action_pressed("move_left"):
+		inputDir.x -= 1
+	if Input.is_action_pressed("move_back"):
+		inputDir.z += 1
+	if Input.is_action_pressed("move_forward"):
+		inputDir.z -= 1
+
+	if inputDir != Vector3.ZERO:
+		inputDir = inputDir.normalized()
+		playerPivot.basis = Basis.looking_at(inputDir)
+	player.target_velocity.x = inputDir.x * player.speed
+	player.target_velocity.z = inputDir.z * player.speed
+	
+func playerInput(event) -> void:
+	pass
