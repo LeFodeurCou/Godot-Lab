@@ -1,7 +1,6 @@
 extends Camera3D
 
 var mouse_delta := Vector2.ZERO
-var mouseNeedToBeCaptured: bool = true
 var mouse_sensitivity := 0.002
 var yaw := 0.0
 var pitch := 0.0
@@ -36,7 +35,7 @@ func playerProcess(player: CharacterBody3D, playerPivot: Node3D) -> void:
 	if inputDir != Vector3.ZERO:
 		inputDir = inputDir.normalized()
 		# ✅ KEY: use player orientation (yaw)
-		var localBasis = player.global_transform.basis
+		var localBasis = playerPivot.global_transform.basis
 		var direction = (localBasis.x * inputDir.x + localBasis.z * inputDir.z)
 		direction.y = 0
 		direction = direction.normalized()
@@ -47,8 +46,9 @@ func playerProcess(player: CharacterBody3D, playerPivot: Node3D) -> void:
 		player.target_velocity.z = 0
 	
 func playerInput(event) -> void:
-	if mouseNeedToBeCaptured:
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-		mouseNeedToBeCaptured = false
 	if event is InputEventMouseMotion:
 		mouse_delta += event.relative
+
+func onActivate(player: CharacterBody3D) -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	player.get_node("Pivot").rotation.y = yaw

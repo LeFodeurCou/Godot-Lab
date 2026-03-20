@@ -17,9 +17,18 @@ func playerProcess(player: CharacterBody3D, playerPivot: Node3D) -> void:
 
 	if inputDir != Vector3.ZERO:
 		inputDir = inputDir.normalized()
-		playerPivot.basis = Basis.looking_at(inputDir)
+		var angle = atan2(-inputDir.x, -inputDir.z)
+		playerPivot.rotation.y = angle
 	player.target_velocity.x = inputDir.x * player.speed
 	player.target_velocity.z = inputDir.z * player.speed
 	
-func playerInput(event) -> void:
-	pass
+func onActivate(player: CharacterBody3D) -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	# Reset player rotation
+	player.rotation = Vector3.ZERO
+	# Reset pivot rotation
+	player.get_node("Pivot").rotation = Vector3.ZERO
+	# Reset camera pivot if you have one
+	var camPivot = get_parent()
+	if camPivot:
+		camPivot.rotation = Vector3.ZERO
