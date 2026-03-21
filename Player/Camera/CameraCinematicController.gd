@@ -1,12 +1,17 @@
 extends Camera3D
 
 var tween: Tween
+var isMovementAllowed = false
 
 func _ready() -> void:
 	self.position = Vector3(0, 20, 20)
 	self.rotation_degrees = Vector3(-45, 0, 0)
 
 func playerProcess(player: CharacterBody3D, playerPivot: Node3D) -> void:
+	if !isMovementAllowed:
+		player.target_velocity.x = 0
+		player.target_velocity.z = 0
+		return
 	var inputDir = Vector3.ZERO
 	if Input.is_action_pressed("move_right"):
 		inputDir.x += 1
@@ -46,6 +51,7 @@ func cinematic() -> void:
 	#tween.tween_property(self, "rotation_degrees", Vector3(0,180,0), 5)
 	tween.finished.connect(func():
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		isMovementAllowed = true
 		#self.position = initialPosition
 		#self.rotation = initialRotation
 	)
@@ -54,3 +60,6 @@ func onDeactivate() -> void:
 	tween.kill()
 	self.position = Vector3(0, 20, 20)
 	self.rotation_degrees = Vector3(-45, 0, 0)
+
+func allowGlobalMovements() -> bool:
+	return isMovementAllowed

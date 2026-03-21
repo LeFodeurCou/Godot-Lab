@@ -1,13 +1,14 @@
 [gd_scene format=3 uid="uid://iux8qu588cf8"]
 
 [ext_resource type="PackedScene" uid="uid://d0ypm0v45pwdv" path="res://art/player.glb" id="1_4flbx"]
-[ext_resource type="Script" uid="uid://ci8y6rim3vfcq" path="res://Player/player.gd" id="1_onrkg"]
+[ext_resource type="Script" uid="uid://ci8y6rim3vfcq" path="res://Player/Player.gd" id="1_onrkg"]
 [ext_resource type="Script" uid="uid://diyhwf47k61ge" path="res://Player/Camera/CameraBasicController.gd" id="3_btcbx"]
 [ext_resource type="Script" uid="uid://boky37deu0ogg" path="res://Player/Camera/CameraFPController.gd" id="4_gwnis"]
 [ext_resource type="Script" uid="uid://caoojdatbsqwl" path="res://Player/Camera/CameraTPController.gd" id="5_k53q1"]
 [ext_resource type="Script" uid="uid://cx2f08fpebxl0" path="res://Player/Camera/cameraHsController.gd" id="6_fhl08"]
 [ext_resource type="Script" uid="uid://d0p0na34oq3xd" path="res://Player/Camera/CameraTacticalController.gd" id="7_vtle1"]
 [ext_resource type="Script" uid="uid://c1hny6hxeexs6" path="res://Player/Camera/CameraCinematicController.gd" id="8_od3ui"]
+[ext_resource type="Script" uid="uid://bp7tywconjvah" path="res://Player/Camera/CameraDebugController.gd" id="9_00tjw"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_4flbx"]
 radius = 0.8
@@ -45,3 +46,6 @@ script = ExtResource("7_vtle1")
 
 [node name="CameraCinematic" type="Camera3D" parent="CameraPivot" unique_id=449455009]
 script = ExtResource("8_od3ui")
+
+[node name="CameraDebug" type="Camera3D" parent="CameraPivot" unique_id=1837842164]
+script = ExtResource("9_00tjw")
