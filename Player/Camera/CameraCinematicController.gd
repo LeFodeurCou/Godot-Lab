@@ -57,7 +57,9 @@ func cinematic() -> void:
 	)
 
 func onDeactivate() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	tween.kill()
+	isMovementAllowed = false
 	self.position = Vector3(0, 20, 20)
 	self.rotation_degrees = Vector3(-45, 0, 0)
 

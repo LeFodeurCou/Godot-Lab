@@ -52,3 +52,8 @@ func playerInput(event) -> void:
 func onActivate(player: CharacterBody3D) -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	player.get_node("Pivot").rotation.y = yaw
+	yaw = player.rotation.y
+
+func onDeactivate() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	yaw = 0.0

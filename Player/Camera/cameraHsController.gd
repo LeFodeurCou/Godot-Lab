@@ -52,7 +52,6 @@ func get_click_position():
 	return null
 
 func onActivate(player: CharacterBody3D) -> void:
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	# Reset player rotation
 	player.rotation = Vector3.ZERO
 	# Reset pivot rotation

@@ -39,6 +39,7 @@ func input(event):
 	if !isCameraForced and event.is_action_pressed("camera_switch"):
 		if cameras[currentCameraIdx].has_method("onDeactivate"):
 			cameras[currentCameraIdx].onDeactivate()
+		cameras[currentCameraIdx].current = false
 		currentCameraIdx = (currentCameraIdx + 1) % cameras.size()
 		cameras[currentCameraIdx].current = true
 		if cameras[currentCameraIdx].has_method("onActivate"):
