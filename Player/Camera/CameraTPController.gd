@@ -67,7 +67,7 @@ func playerProcess(player: CharacterBody3D, playerPivot: Node3D):
 
 	if inputDir != Vector3.ZERO:
 		inputDir = inputDir.normalized()
-		var localBasis = playerPivot.global_transform.basis
+		var localBasis = player.global_transform.basis
 		var direction = (localBasis.x * inputDir.x + localBasis.z * inputDir.z)
 		direction.y = 0
 		direction = direction.normalized()
@@ -83,8 +83,13 @@ func playerInput(event):
 
 func onActivate(player: CharacterBody3D) -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-	player.get_node("Pivot").rotation.y = yaw
-	yaw = player.rotation.y
+	var pivot = player.get_node("Pivot")
+	if pivot.rotation.y == 0.0:
+		yaw = player.rotation.y
+	else:
+		yaw = pivot.rotation.y
+		player.rotation.y = yaw
+		pivot.rotation.y = 0.0
 
 func onDeactivate() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
