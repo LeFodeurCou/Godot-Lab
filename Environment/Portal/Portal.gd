@@ -21,12 +21,15 @@ func _on_body_entered(body):
 			rng.randf_range(0.0, 1.0)
 		)
 		if generateWorld:
-			# use load instead preload for dynamic generation (runtime vs compiler)
-			# load("path") return null if path doesn't exist
-			var generator = load(str("res://World/Dynamic/", targetWorld, ".gd")).new()
-			var newWorld = generator.generateWorld("MainWorld")
-			get_tree().root.add_child(newWorld)
-			get_tree().current_scene.queue_free()
-			get_tree().current_scene = newWorld
+			Game.changeWorld(
+				str("res://World/Dynamic/", targetWorld, ".gd"),
+				Vector3(0, 0, 0),
+				Game.player.rotation.y,
+				{
+					"portalBackTarget": "MainWorld"
+				}
+			)
 		else:
-			get_tree().change_scene_to_file(str("res://World/Static/", targetWorld, ".tscn"))
+			Game.changeWorld(
+				str("res://World/Static/", targetWorld, ".tscn")
+			)

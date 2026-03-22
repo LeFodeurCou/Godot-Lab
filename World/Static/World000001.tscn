@@ -1,13 +1,10 @@
 [gd_scene format=3 uid="uid://dq13ibfqu0vf0"]
 
-[ext_resource type="PackedScene" uid="uid://iux8qu588cf8" path="res://Player/player.tscn" id="1_022pr"]
 [ext_resource type="PackedScene" uid="uid://cahq4e5dyox6l" path="res://Environment/Room/BasicRoom.tscn" id="2_6f54l"]
 [ext_resource type="PackedScene" uid="uid://c3fwk16yhuakh" path="res://Environment/Portal/portal.tscn" id="3_5dq6f"]
 [ext_resource type="Script" uid="uid://cgo3xxy5b7ade" path="res://World/Static/testScript.gd" id="4_6f54l"]
 
 [node name="World000001" type="Node3D" unique_id=1348551989]
-
-[node name="Player" parent="." unique_id=1691673903 instance=ExtResource("1_022pr")]
 
 [node name="BasicRoom" parent="." unique_id=2007788561 instance=ExtResource("2_6f54l")]
 

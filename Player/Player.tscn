@@ -1,0 +1,51 @@
+[gd_scene format=3 uid="uid://iux8qu588cf8"]
+
+[ext_resource type="Script" uid="uid://ci8y6rim3vfcq" path="res://Player/Player.gd" id="1_j23h2"]
+[ext_resource type="PackedScene" uid="uid://d0ypm0v45pwdv" path="res://art/player.glb" id="2_0j2ni"]
+[ext_resource type="Script" uid="uid://diyhwf47k61ge" path="res://Player/Camera/CameraBasicController.gd" id="3_v0k0e"]
+[ext_resource type="Script" uid="uid://boky37deu0ogg" path="res://Player/Camera/CameraFPController.gd" id="4_5wa8t"]
+[ext_resource type="Script" uid="uid://caoojdatbsqwl" path="res://Player/Camera/CameraTPController.gd" id="5_p7tob"]
+[ext_resource type="Script" uid="uid://cx2f08fpebxl0" path="res://Player/Camera/cameraHsController.gd" id="6_dm7nj"]
+[ext_resource type="Script" uid="uid://d0p0na34oq3xd" path="res://Player/Camera/CameraTacticalController.gd" id="7_3mea3"]
+[ext_resource type="Script" uid="uid://c1hny6hxeexs6" path="res://Player/Camera/CameraCinematicController.gd" id="8_7v5gs"]
+[ext_resource type="Script" uid="uid://bp7tywconjvah" path="res://Player/Camera/CameraDebugController.gd" id="9_8sa4y"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_4flbx"]
+radius = 0.8
+
+[node name="Player" type="CharacterBody3D" unique_id=1691673903]
+collision_mask = 6
+script = ExtResource("1_j23h2")
+
+[node name="Pivot" type="Node3D" parent="." unique_id=361301021]
+
+[node name="Character" parent="Pivot" unique_id=1406915616 instance=ExtResource("2_0j2ni")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=604829403]
+shape = SubResource("SphereShape3D_4flbx")
+
+[node name="CameraPivot" type="Marker3D" parent="." unique_id=1179431997]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
+
+[node name="CameraBasic" type="Camera3D" parent="CameraPivot" unique_id=1948342054]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
+script = ExtResource("3_v0k0e")
+
+[node name="CameraFP" type="Camera3D" parent="CameraPivot" unique_id=45629616]
+script = ExtResource("4_5wa8t")
+
+[node name="CameraTP" type="Camera3D" parent="CameraPivot" unique_id=995668447]
+script = ExtResource("5_p7tob")
+
+[node name="CameraHS" type="Camera3D" parent="CameraPivot" unique_id=1738941366]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
+script = ExtResource("6_dm7nj")
+
+[node name="CameraTactical" type="Camera3D" parent="CameraPivot" unique_id=2063157521]
+script = ExtResource("7_3mea3")
+
+[node name="CameraCinematic" type="Camera3D" parent="CameraPivot" unique_id=449455009]
+script = ExtResource("8_7v5gs")
+
+[node name="CameraDebug" type="Camera3D" parent="CameraPivot" unique_id=1837842164]
+script = ExtResource("9_8sa4y")

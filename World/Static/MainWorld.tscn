@@ -1,12 +1,9 @@
 [gd_scene format=3 uid="uid://be7h7hbesehe6"]
 
-[ext_resource type="PackedScene" uid="uid://iux8qu588cf8" path="res://Player/player.tscn" id="1_xme8o"]
 [ext_resource type="PackedScene" uid="uid://c3fwk16yhuakh" path="res://Environment/Portal/portal.tscn" id="2_e2s3l"]
 [ext_resource type="PackedScene" uid="uid://cahq4e5dyox6l" path="res://Environment/Room/BasicRoom.tscn" id="3_g4o5v"]
 
 [node name="MainWorld" type="Node3D" unique_id=294659693]
-
-[node name="Player" parent="." unique_id=1691673903 instance=ExtResource("1_xme8o")]
 
 [node name="Portal" parent="." unique_id=874380624 instance=ExtResource("2_e2s3l")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -5)

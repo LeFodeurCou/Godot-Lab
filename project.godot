@@ -15,6 +15,10 @@ run/main_scene="uid://baefm88ehdqix"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+Game="*uid://b3n0447tjq3j2"
+
 [editor]
 
 movie_writer/movie_file="/home/lefodeurcou/Dev/Godot/Lab/Video/ProjectCaptures/Capture3.avi"

@@ -1,5 +1,7 @@
 extends Node3D
 
+var portalBackTarget: String
+
 # TODO make it root global
 var debug = true
 
@@ -13,34 +15,24 @@ var start
 var end
 var elapsed
 
-func generateWorld(portalBackTarget: String) -> Node3D:
-	
-	var world = Node3D.new()
-	world.name = "World000004"
+func _ready() -> void:
+	self.name = "World000004"
 	
 	var seedHandler = SeedHandler.new(originSeed)
 	config = ProceduralGeneratorConfig.new(seedHandler)
 	generator = ProceduralGenerator.new(config)
 	var worldGenerator = WorldGenerator.new(generator)
 	start = Time.get_ticks_usec()
-	var origin = worldGenerator.generate(world)
+	var origin = worldGenerator.generate(self)
 	end = Time.get_ticks_usec()
 	elapsed = (end - start) / 1000.0
 	
 	var lightFactory = preload("res://Environment/Component/Light.gd")
-	world.add_child(
+	self.add_child(
 		lightFactory.create()
 	)
 	
-	#player
-	var playerScene = preload("res://Player/player.tscn")
-	var player = playerScene.instantiate()
-	player.position = origin
-	world.add_child(player)
-	
-	debugOverlay(world)
-	
-	return world
+	debugOverlay(self)
 
 func debugOverlay(world: Node3D) -> void:
 	if (debug):
@@ -53,4 +45,4 @@ func debugOverlay(world: Node3D) -> void:
 			"FPS: %d" % Engine.get_frames_per_second(),
 		])
 		canvas.add_child(overlay)
-		world.add_child(canvas)
+		self.add_child(canvas)
