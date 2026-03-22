@@ -41,4 +41,5 @@ func getSpawnTransform(data := {}) -> Transform3D:
 		# TODO fix two things :
 		# Local portal : rotation
 		# mesh size after rotation
+		# TODO also fix if the arrival position is occupied, then change the transform or lock the TP may be
 	return t

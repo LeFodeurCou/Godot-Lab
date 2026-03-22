@@ -30,6 +30,13 @@ func _ready() -> void:
 		lightFactory.create()
 	)
 	
+	#Portal backp
+	self.add_child(
+		self.makePortal(
+			Vector3(worldGenerator.roomWidth / 2.0 - worldGenerator.roomWidth / 4.0, 0, -worldGenerator.roomDepth / 2.0 + worldGenerator.roomDepth / 4.0)
+		)
+	)
+	
 	createDebugOverlay(self)
 	
 	super._ready()
