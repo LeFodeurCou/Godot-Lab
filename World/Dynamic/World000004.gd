@@ -1,6 +1,4 @@
-extends Node3D
-
-var portalBackTarget: String # TODO we need to implement at least one portal to get back in the main world
+extends World
 
 var debugCanvas: CanvasLayer
 
@@ -33,6 +31,8 @@ func _ready() -> void:
 	)
 	
 	createDebugOverlay(self)
+	
+	super._ready()
 
 func _onDebugToggled(value: bool) -> void:
 	debugCanvas.visible = value

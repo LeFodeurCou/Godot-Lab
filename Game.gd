@@ -2,45 +2,92 @@ extends Node
 
 # Game.gd (AutoLoad)
 var player: CharacterBody3D
-var currentWorld: Node
+var loadedWorlds: Dictionary = {} # Resource -> Node
+var currentWorld: World
+
+# Game rules
+var maxWorldCacheTimeBeforReset: int = 8 * 60 * 1000 # (8 minutes * 60 seconds * 1000 ms)
 
 func _ready() -> void:
 	spawnPlayer()
 	changeWorld(
 		"res://World/Static/MainWorld.tscn"
 	)
+	var timer = Timer.new()
+	timer.wait_time = 5.0
+	timer.autostart = true
+	timer.one_shot = false
+	timer.timeout.connect(_onCleanupTimer)
+	add_child(timer)
+
+func _onCleanupTimer():
+	cleanupWorlds(maxWorldCacheTimeBeforReset)
 
 func changeWorld(
 	path: String,
-	spawn_position: Vector3 = Vector3(0, 0, 0),
-	spawn_rotation: float = 0.0,
 	data: Dictionary = {}
 )-> void:
-	if currentWorld:
-		currentWorld.queue_free()
 
-	var resource = load(path)
-	if resource is PackedScene:
-		currentWorld = resource.instantiate()
-	elif resource is Script:
-		currentWorld = resource.new()
-	else:
-		push_error("Unsupported world type: " + path)
-		return
+	var newWorld = getOrLoadWorld(path)
+	# 👉 If switching world
+	if currentWorld != newWorld:
+		if currentWorld and currentWorld.get_parent():
+			currentWorld.get_parent().remove_child.call_deferred(currentWorld)
+		currentWorld = newWorld
+		get_tree().root.add_child.call_deferred(currentWorld)
 	
 	# ✅ Inject data BEFORE ready
 	for key in data:
-		currentWorld.set(key, data[key])
-		
-	get_tree().root.add_child.call_deferred(currentWorld)
+		if currentWorld.has_method("set") or key in currentWorld:
+			currentWorld.set(key, data[key])
 
 	# ✅ Re-parent player into the world
 	if player.get_parent():
 		player.get_parent().remove_child(player)
 	currentWorld.add_child.call_deferred(player)
 
-	player.global_position = spawn_position
-	player.rotation.y = spawn_rotation
+	# After world is added
+	await get_tree().process_frame  # ensure world is ready
+
+	#player.global_position = spawn_position
+	#player.rotation.y = spawn_rotation
+	#if data.has("targetSpawnId") and data["targetSpawnId"] != "":
+	var t: Transform3D = currentWorld.getSpawnPointById(data)
+	player.global_transform = t
+
+func getOrLoadWorld(path: String) -> World:
+	if loadedWorlds.has(path):
+		loadedWorlds[path].last_used = Time.get_ticks_msec()
+		return loadedWorlds[path].world
+	var resource = load(path)
+	var world: Node = null
+	if resource is PackedScene:
+		world = resource.instantiate()
+	elif resource is Script:
+		world = resource.new()
+	else:
+		push_error("Unsupported world type: " + str(resource))
+		return null
+	loadedWorlds[path] = {
+		"world": world,
+		"last_used": Time.get_ticks_msec()
+	}
+	return world
+
+func cleanupWorlds(max_idle_time_ms := 60000): # 1 min
+	var now = Time.get_ticks_msec()
+	for path in loadedWorlds.keys():
+		var entry = loadedWorlds[path]
+		if entry.world == currentWorld:
+			loadedWorlds[path].last_used = Time.get_ticks_msec()
+			continue
+		if now - entry.last_used > max_idle_time_ms:
+			if entry.world.get_parent():
+				entry.world.get_parent().remove_child(entry.world)
+			if player.isDebug:
+				print("World " + path + " reset")
+			entry.world.queue_free()
+			loadedWorlds.erase(path)
 
 func spawnPlayer() -> void:
 	var playerScene = preload("res://Player/Player.tscn")

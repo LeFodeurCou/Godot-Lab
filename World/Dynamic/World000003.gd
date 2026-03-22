@@ -1,6 +1,4 @@
-extends Node
-
-var portalBackTarget: String
+extends World
 
 func _ready() -> void:
 	self.name = "World000003"
@@ -69,8 +67,9 @@ func _ready() -> void:
 	)
 	
 	 #Portal backp
-	var portalScene = preload("res://Environment/Portal/portal.tscn")
-	var portal = portalScene.instantiate()
-	portal.targetWorld = portalBackTarget
-	portal.position = Vector3(roomWidth / 2.0 - roomWidth / 4.0, 0, roomDepth / 2.0 - roomDepth / 4.0)
-	self.add_child(portal)
+	self.add_child(
+		self.makePortal(
+			Vector3(roomWidth / 2.0 - roomWidth / 4.0, 0, roomDepth / 2.0 - roomDepth / 4.0)
+		)
+	)
+	super._ready()
