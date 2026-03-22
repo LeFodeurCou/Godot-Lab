@@ -2,8 +2,7 @@ extends Node3D
 
 class_name WorldGenerator
 
-# TODO make it root global
-var debug = true
+var debugRoot: Node3D
 
 # SoA (Structure of Arrays) : Replace Cell class
 var cellX: Array = PackedInt32Array()
@@ -33,6 +32,7 @@ const DX = [0, 1, 0, -1]
 const DZ = [-1, 0, 1, 0]
 
 func _init(generator: ProceduralGenerator) -> void:
+	Game.connectPlayerDebug(self)
 	# SoA Cell clear
 	cellX.clear()
 	cellY.clear()
@@ -52,8 +52,16 @@ func _init(generator: ProceduralGenerator) -> void:
 	cellSocketMask = generator.cellSocketMask
 	cellStructureType = generator.cellStructureType
 	cellCount = generator.cellCount
-	
+
+func _onDebugToggled(value: bool) -> void:
+	if debugRoot:
+		debugRoot.visible = value
+
 func generate(world: Node3D) -> Vector3i:
+	debugRoot = Node3D.new()
+	debugRoot.visible = Game.player.isDebug
+	debugRoot.name = "DebugRoot"
+	world.add_child(debugRoot)
 	var originX = cellX[0]
 	var originY = cellY[0]
 	for cellIdx in range(cellCount):
@@ -61,7 +69,7 @@ func generate(world: Node3D) -> Vector3i:
 		var z = (cellY[cellIdx] - originY) * roomDepth
 		makeFloor(world, x, z)
 		checkNeighbors(world, cellIdx, x, z)
-		debugLabels(world, cellIdx, x, z)
+		debugLabels(cellIdx, x, z)
 	return Vector3i(0, floorThickeness >> 1, 0)
 	
 func makeFloor(world: Node3D, x: int, z: int) -> void:
@@ -94,11 +102,9 @@ func makeWall(x: int, z: int) -> Wall:
 			Vector3(x, wallHeight / 2.0 - floorThickeness, z)
 		)
 
-func debugLabels(world, cellIdx: int, x: int, z:int) -> void:
-	if !debug:
-		return
+func debugLabels(cellIdx: int, x: int, z:int) -> void:
 	var label = Label3D.new()
 	label.text = str(cellHeat[cellIdx])
 	label.font_size = 320
 	label.position = Vector3(x, 3, z)
-	world.add_child(label)
+	debugRoot.add_child(label)

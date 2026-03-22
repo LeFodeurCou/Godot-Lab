@@ -45,3 +45,7 @@ func changeWorld(
 func spawnPlayer() -> void:
 	var playerScene = preload("res://Player/Player.tscn")
 	player = playerScene.instantiate()
+	
+func connectPlayerDebug(target: Object) -> void:
+	if player:
+		Game.player.connect("debugToggled", Callable(target, "_onDebugToggled"))

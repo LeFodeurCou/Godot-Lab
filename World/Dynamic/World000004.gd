@@ -1,9 +1,8 @@
 extends Node3D
 
-var portalBackTarget: String
+var portalBackTarget: String # TODO we need to implement at least one portal to get back in the main world
 
-# TODO make it root global
-var debug = true
+var debugCanvas: CanvasLayer
 
 var originSeed = 123
 var generator: ProceduralGenerator
@@ -16,6 +15,7 @@ var end
 var elapsed
 
 func _ready() -> void:
+	Game.connectPlayerDebug(self)
 	self.name = "World000004"
 	
 	var seedHandler = SeedHandler.new(originSeed)
@@ -32,17 +32,20 @@ func _ready() -> void:
 		lightFactory.create()
 	)
 	
-	debugOverlay(self)
+	createDebugOverlay(self)
 
-func debugOverlay(world: Node3D) -> void:
-	if (debug):
-		var canvas = CanvasLayer.new()
-		var overlay = DebugOverlay.new()
-		overlay.set_lines([
-			"Cells: %d" % generator.cellCount,
-			"Seed: %d" % originSeed,
-			"Gen: %.2f ms" % elapsed,
-			"FPS: %d" % Engine.get_frames_per_second(),
-		])
-		canvas.add_child(overlay)
-		self.add_child(canvas)
+func _onDebugToggled(value: bool) -> void:
+	debugCanvas.visible = value
+
+func createDebugOverlay(world: Node3D) -> void:
+	debugCanvas = CanvasLayer.new()
+	debugCanvas.visible = Game.player.isDebug
+	var overlay = DebugOverlay.new()
+	overlay.set_lines([
+		"Cells: %d" % generator.cellCount,
+		"Seed: %d" % originSeed,
+		"Gen: %.2f ms" % elapsed,
+		"FPS: %d" % Engine.get_frames_per_second(),
+	])
+	debugCanvas.add_child(overlay)
+	world.add_child(debugCanvas)

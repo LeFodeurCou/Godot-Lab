@@ -25,6 +25,8 @@ var end
 var elapsed
 
 func _ready():
+	Game.connectPlayerDebug(self)
+	self.get_parent().visible = Game.player.isDebug
 	# SoA Cell clear
 	cellX.clear()
 	cellY.clear()
@@ -61,6 +63,8 @@ func _ready():
 
 	queue_redraw()
 
+func _onDebugToggled(value: bool) -> void:
+	self.get_parent().visible = value
 
 func _draw():
 	var drawCount = min(cellCount, DEBUG_DRAW_LIMIT)
