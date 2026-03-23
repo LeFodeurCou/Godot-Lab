@@ -33,7 +33,7 @@ func _ready() -> void:
 	#Portal backp
 	self.add_child(
 		self.makePortal(
-			Vector3(worldGenerator.roomWidth / 2.0 - worldGenerator.roomWidth / 4.0, 0, -worldGenerator.roomDepth / 2.0 + worldGenerator.roomDepth / 4.0)
+			Vector3(worldGenerator.roomWidth / 2.0 - worldGenerator.roomWidth / 4.0, 3.5, -worldGenerator.roomDepth / 2.0 + worldGenerator.roomDepth / 4.0)
 		)
 	)
 	

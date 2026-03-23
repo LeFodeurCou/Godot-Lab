@@ -78,3 +78,5 @@ func globalMovements(delta: float) -> void:
 	player.velocity = player.target_velocity
 	player.move_and_slide()
 	
+func getCurrentCamera() -> Camera3D:
+	return cameras[currentCameraIdx]

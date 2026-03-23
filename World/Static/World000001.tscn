@@ -11,7 +11,7 @@ script = ExtResource("1_6f54l")
 [node name="BasicRoom" parent="." unique_id=2007788561 instance=ExtResource("2_6f54l")]
 
 [node name="Portal5" parent="." unique_id=874380624 instance=ExtResource("3_5dq6f")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21, 0, -22)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21, 2.5, -22)
 targetWorld = "res://World/Static/MainWorld.tscn"
 spawnId = "World000001"
 targetSpawnId = "MainWorld000001"

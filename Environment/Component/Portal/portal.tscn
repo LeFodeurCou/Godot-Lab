@@ -11,7 +11,28 @@ size = Vector3(3.5, 5, 0.5)
 size = Vector3(3.5, 5, 0.5)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0r486"]
-size = Vector3(3.5, 5, 0.5)
+size = Vector3(3, 5, 0.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1m1r8"]
+size = Vector3(1.5, 5, 1.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1m1r8"]
+albedo_color = Color(0.827451, 0.3529412, 0.40784314, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_f52tq"]
+size = Vector3(1.5, 5, 1.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f52tq"]
+albedo_color = Color(0.827451, 0.3529412, 0.4, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_avt0s"]
+size = Vector3(5.5, 1, 1.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_avt0s"]
+albedo_color = Color(0.827451, 0.3529412, 0.4, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bos66"]
+size = Vector3(5, 1.5, 1.5)
 
 [node name="Portal" type="Node3D" unique_id=874380624]
 script = ExtResource("1_ax12f")
@@ -20,13 +41,11 @@ script = ExtResource("1_ax12f")
 collision_layer = 4
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=50231120]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 layers = 4
 mesh = SubResource("BoxMesh_0r486")
 surface_material_override/0 = SubResource("StandardMaterial3D_0r486")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1746293431]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 shape = SubResource("BoxShape3D_gci8f")
 debug_color = Color(0.7411765, 0.19215687, 0, 1)
 
@@ -34,8 +53,40 @@ debug_color = Color(0.7411765, 0.19215687, 0, 1)
 collision_layer = 4
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D/Area3D" unique_id=1647912928]
-transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 2, 0)
 shape = SubResource("BoxShape3D_0r486")
 debug_color = Color(0.7411765, 0.19215687, 0, 1)
+
+[node name="PillarLeft" type="StaticBody3D" parent="." unique_id=1873961471]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0)
+collision_layer = 4
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="PillarLeft" unique_id=559310301]
+mesh = SubResource("BoxMesh_1m1r8")
+surface_material_override/0 = SubResource("StandardMaterial3D_1m1r8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PillarLeft" unique_id=1564486990]
+shape = SubResource("BoxShape3D_f52tq")
+
+[node name="PillarRight" type="StaticBody3D" parent="." unique_id=633329468]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+collision_layer = 4
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="PillarRight" unique_id=1787017951]
+mesh = SubResource("BoxMesh_1m1r8")
+surface_material_override/0 = SubResource("StandardMaterial3D_f52tq")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PillarRight" unique_id=965154128]
+shape = SubResource("BoxShape3D_f52tq")
+
+[node name="Top" type="StaticBody3D" parent="." unique_id=1678284914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+collision_layer = 4
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Top" unique_id=1131833181]
+mesh = SubResource("BoxMesh_avt0s")
+surface_material_override/0 = SubResource("StandardMaterial3D_avt0s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Top" unique_id=1852530253]
+shape = SubResource("BoxShape3D_bos66")
 
 [connection signal="body_entered" from="StaticBody3D/Area3D" to="StaticBody3D/Area3D" method="_on_body_entered"]

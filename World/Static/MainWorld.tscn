@@ -8,7 +8,7 @@
 script = ExtResource("1_3yoyv")
 
 [node name="Portal" parent="." unique_id=874380624 instance=ExtResource("2_e2s3l")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 2.5, -5)
 targetWorld = "res://World/Static/World000001.tscn"
 spawnId = "MainWorld000001"
 targetSpawnId = "World000001"
@@ -16,31 +16,31 @@ targetSpawnId = "World000001"
 [node name="BasicRoom" parent="." unique_id=2007788561 instance=ExtResource("3_g4o5v")]
 
 [node name="Portal2" parent="." unique_id=1764902612 instance=ExtResource("2_e2s3l")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, -5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 2.5, -5)
 targetWorld = "res://World/Dynamic/World000002.gd"
 spawnId = "MainWorld000002"
 targetSpawnId = "World000002"
 
 [node name="Portal3" parent="." unique_id=1293479091 instance=ExtResource("2_e2s3l")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 2.5, 5)
 targetWorld = "res://World/Dynamic/World000003.gd"
 spawnId = "MainWorld000003"
 targetSpawnId = "World000003"
 
 [node name="Portal4" parent="." unique_id=1099007131 instance=ExtResource("2_e2s3l")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 2.5, 5)
 targetWorld = "res://World/Dynamic/World000004.gd"
 spawnId = "MainWorld000004"
 targetSpawnId = "World000004"
 
 [node name="Portal5" parent="." unique_id=296888170 instance=ExtResource("2_e2s3l")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -16, 0, 20)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -16, 2.5, 20)
 targetWorld = "res://World/Static/MainWorld.tscn"
 spawnId = "Local01"
 targetSpawnId = "Local02"
 
 [node name="Portal6" parent="." unique_id=1089362655 instance=ExtResource("2_e2s3l")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 16, 0, 20)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 16, 2.5, 20)
 targetWorld = "res://World/Static/MainWorld.tscn"
 spawnId = "Local02"
 targetSpawnId = "Local01"

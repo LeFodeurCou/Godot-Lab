@@ -60,7 +60,7 @@ func _ready() -> void:
 	 #Portal backp
 	self.add_child(
 		self.makePortal(
-			Vector3(roomWidth / 2.0 - roomWidth / 4.0, 0, -roomDepth / 2.0 + roomDepth / 4.0)
+			Vector3(roomWidth / 2.0 - roomWidth / 4.0, 3.5, -roomDepth / 2.0 + roomDepth / 4.0)
 		)
 	)
 	

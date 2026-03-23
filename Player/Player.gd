@@ -1,5 +1,7 @@
 extends CharacterBody3D
 
+class_name Player
+
 signal debugToggled(value)
 
 var contextCamera: ContextCamera
@@ -25,3 +27,15 @@ func _input(event):
 	if Input.is_action_just_pressed("switchDebug"):
 			isDebug = !isDebug
 			emit_signal("debugToggled", isDebug)
+
+func stopMovement() -> void:
+	if contextCamera:
+		var camera = contextCamera.getCurrentCamera()
+		if camera.has_method("clearTarget"):
+			camera.clearTarget()
+	target_velocity = Vector3.ZERO
+
+func getPlayerCollisionSize() -> float:
+	var shape = $CollisionShape3D.shape
+	# Assuming it stays a SphereShape for now
+	return shape.radius + shape.margin

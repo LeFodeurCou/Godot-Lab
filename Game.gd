@@ -1,7 +1,7 @@
 extends Node
 
 # Game.gd (AutoLoad)
-var player: CharacterBody3D
+var player: Player
 var loadedWorlds: Dictionary = {} # Resource -> Node
 var currentWorld: World
 
@@ -49,11 +49,9 @@ func changeWorld(
 	# After world is added
 	await get_tree().process_frame  # ensure world is ready
 
-	#player.global_position = spawn_position
-	#player.rotation.y = spawn_rotation
-	#if data.has("targetSpawnId") and data["targetSpawnId"] != "":
 	var t: Transform3D = currentWorld.getSpawnPointById(data)
 	player.global_transform = t
+	player.stopMovement()
 
 func getOrLoadWorld(path: String) -> World:
 	if loadedWorlds.has(path):

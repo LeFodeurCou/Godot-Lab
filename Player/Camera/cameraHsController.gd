@@ -60,3 +60,6 @@ func onActivate(player: CharacterBody3D) -> void:
 	var camPivot = get_parent()
 	if camPivot:
 		camPivot.rotation = Vector3.ZERO
+
+func clearTarget():
+	has_target = false
