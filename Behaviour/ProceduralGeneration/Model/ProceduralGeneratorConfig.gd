@@ -11,7 +11,7 @@ var rng: RandomGenerator
 # 10K ~150ms
 # 100K ~1.5s
 # 1M ~16s
-#var cellNumber: int = 1024
+# 10M ~ 3m
 var cellNumber: int = 16*16 # Minecraft logic
 #var cellNumber: int = 16*16*4 # also Minecraft logic but bigger
 #var cellNumber: int = 10000000 # Hardest stress test

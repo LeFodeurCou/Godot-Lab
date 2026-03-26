@@ -14,7 +14,7 @@ var cellStructureType: Array = PackedByteArray()
 
 # Internal values
 var grid: Dictionary
-var frontier: Array
+var frontier: Array = PackedInt32Array()
 var cellCount: int
 var graphBuildProgression: float
 # Noise bias direction
@@ -66,6 +66,50 @@ const KEY_DIR = [
 	1,            # down  (y + 1)
 	-(1 << 32)    # left  (x - 1)
 ]
+
+# Pre allocated variables for optimization
+var frontierIndexChoice: int
+var frontierCoefficient: float
+var frontierSize: int
+var frontierIndexChoosen: int
+var choosenCellX: int
+var choosenCellY: int
+var bestIndex: int
+var bestEntropy: int
+var entropicFrontierIndex: int
+var entropy: int
+var neighborCount: int
+var roomConfig:= PackedFloat32Array()
+var roomBiome: float
+var roomThreshold: float
+var maxRooms: float # float instead int to avoid narrowing conversion
+var roomCoef: float
+var halfRoomSize: int
+var roomXCheck: int
+var roomYCheck: int
+var roomXCarve: int
+var roomYCarve: int
+var roomGridKey: int
+var roomCellIndex: int
+var roomNeighborX: int
+var roomNeighborY: int
+var roomNeighborGridKey: int
+var connectOpp: int
+var connectAllIndex: int
+var connectAllNeighborKey: int
+var connectAllNeighborIndex: int
+var neighborStartDir: int
+var neighborDir: int
+var neighborDirX: int
+var neighborDirY: int
+var neighborGridKey: int
+var neighborX: int
+var neighborY: int
+var neighborWeight: float
+var newNeighborIndex: int
+var lastFrontierForRemoval: int
+var absX: int
+var absY: int
 
 func _init(inputConfig: ProceduralGeneratorConfig):
 	# Always configInit first !!!
@@ -123,7 +167,6 @@ func soaClearAndInit() -> void:
 # Internal values initialization (avoid memory leak)
 func internalValuesInit() -> void:
 	grid = {}
-	frontier = []
 	cellCount = 1
 	graphBuildProgression = 0.0
 	# Noise direction setup
@@ -143,26 +186,26 @@ func create() -> void:
 	frontier.append(0)
 	
 	# First phase : graph generation
-	var frontierIndex
 	# Here we check frontier size to avoid pathological seeds
 	while cellCount < cellNumber and frontier.size() > 0:
 		graphBuildProgression = float(cellCount) / float(cellNumber)
-		var frontierSize = frontier.size()
+		frontierSize = frontier.size()
 		# Branch Depth Bias
-		var r = rng.randf()
-		if isFilled or r < 0.6:
+		frontierCoefficient = rng.randf()
+		if isFilled or frontierCoefficient < 0.6:
 			# Take the last frontier cell
-			frontierIndex = frontierSize - 1
-		elif r < 0.85:
-			## Take a random frontier cell
-			#frontierIndex = rng.randi(0, frontierSize - 1)
+			frontierIndexChoice = frontierSize - 1
+		elif frontierCoefficient < 0.85:
 			# Take a frontier by entropy, meaning less socketed are priorized
-			frontierIndex = highestEntropyFrontier(frontierSize)
+			frontierIndexChoice = highestEntropyFrontier()
 		else:
 			# Take the oldest frontier made
-			frontierIndex = int(frontierSize * rng.randf() * rng.randf())
-		if(!placeRoomIfPossible(frontierIndex)):
-			placeNeighborCell(frontierIndex)
+			frontierIndexChoice = int(frontierSize * rng.randf() * rng.randf())
+		frontierIndexChoosen = frontier[frontierIndexChoice]
+		choosenCellX = cellX[frontierIndexChoosen]
+		choosenCellY = cellY[frontierIndexChoosen]
+		if(!placeRoomIfPossible()):
+			placeNeighborCell()
 
 	# Second phase : optional loops and heat computation
 	socketRandomConnecter()
@@ -170,56 +213,53 @@ func create() -> void:
 	
 	clearMemory()
 
-func highestEntropyFrontier(frontierSize: int)-> int:
-	var bestIndex = -1
+func highestEntropyFrontier()-> int:
+	bestIndex = -1
 	# 64 because 63 in binary represent 111111 which means socket for 6 directions
 	# 6 directions is made for 3D plan, x/-x, y/-y and z/-z
-	var bestEntropy = 64
+	bestEntropy = 64
 	for i in 5:
-		var fi = rng.randi(0, frontierSize-1)
-		var e = cellSocketMask[frontier[fi]]
-		if e < bestEntropy:
-			bestEntropy = e
-			bestIndex = fi
+		entropicFrontierIndex = rng.randi(0, frontierSize-1)
+		entropy = cellSocketMask[frontier[entropicFrontierIndex]]
+		if entropy < bestEntropy:
+			bestEntropy = entropy
+			bestIndex = entropicFrontierIndex
 	return bestIndex
 
-func placeRoomIfPossible(frontierIndex: int) -> bool:
+func placeRoomIfPossible() -> bool:
 	if (isFilled):
 		return false
-	var cellIndex = frontier[frontierIndex]
-	var cx = cellX[cellIndex]
-	var cy = cellY[cellIndex]
 	for size in roomSizes:
+		halfRoomSize = size >> 1
 		# Avoid overshooting the max cell number
 		if cellCount + size * size > cellNumber:
 			continue
-		var roomConfig = roomCoefficient[size]
-		var biome = (biomeNoise.get_noise_2d(cx, cy) + 1.0) * 0.5
-		var threshold = roomConfig[2] * biome
-		if graphBuildProgression <= threshold:
+		roomConfig = roomCoefficient[size]
+		roomBiome = (biomeNoise.get_noise_2d(choosenCellX, choosenCellY) + 1.0) * 0.5
+		roomThreshold = roomConfig[2] * roomBiome
+		if graphBuildProgression <= roomThreshold:
 			continue
-		var maxRooms = roomConfig[1]
+		maxRooms = roomConfig[1]
 		if roomCounts[size] >= maxRooms:
 			continue
-		var coef = roomConfig[0]
-		if rng.randf() > coef:
+		roomCoef = roomConfig[0]
+		if rng.randf() > roomCoef:
 			continue
-		if canPlaceRoomXY(cx, cy, size):
-			carveRoomXY(cx, cy, size)
+		if canPlaceRoomXY(size):
+			carveRoomXY()
 			roomCounts[size] += 1
 			return true
 	return false
 
-func canPlaceRoomXY(cx:int, cy:int, size:int) -> bool:
+func canPlaceRoomXY(size:int) -> bool:
 	# a bit shift to the right is a division by 2
 	# eg. 4 is 100, 2 is 10 then 4 >> 1 == 2
-	var half = size >> 1
-	var neighborCount = 0
-	for x in range(-half, half + 1):
-		for y in range(-half, half + 1):
-			var px = cx + x
-			var py = cy + y
-			if grid.has(key(px, py)):
+	neighborCount = 0
+	for x in range(-halfRoomSize, halfRoomSize + 1):
+		for y in range(-halfRoomSize, halfRoomSize + 1):
+			roomXCheck = choosenCellX + x
+			roomYCheck = choosenCellY + y
+			if grid.has(key(roomXCheck, roomYCheck)):
 				neighborCount += 1
 				# if less than size - 1 only the first cell become a room
 				# size - 1 to avoid room collapsing
@@ -227,114 +267,115 @@ func canPlaceRoomXY(cx:int, cy:int, size:int) -> bool:
 					return false
 	return true
 	
-func carveRoomXY(cx:int, cy:int, size:int):
-	var half = int(size / 2.0)
-	var centerCellIndex = grid[key(cx,  cy)]
-	for x in range(-half, half + 1):
-		for y in range(-half, half + 1):
-			var nx = cx + x
-			var ny = cy + y
-			var gridKey = key(nx, ny)
-			var cellIndex
-			if grid.has(gridKey):
-				cellIndex = grid[gridKey]
+func carveRoomXY():
+	for x in range(-halfRoomSize, halfRoomSize + 1):
+		for y in range(-halfRoomSize, halfRoomSize + 1):
+			roomXCarve = choosenCellX + x
+			roomYCarve = choosenCellY + y
+			roomGridKey = key(roomXCarve, roomYCarve)
+			if grid.has(roomGridKey):
+				roomCellIndex = grid[roomGridKey]
 			else:
-				cellIndex = cellCount
-				cellX[cellIndex] = nx
-				cellY[cellIndex] = ny
-				grid[gridKey] = cellIndex
-				cellKey[cellIndex] = gridKey
+				roomCellIndex = cellCount
+				cellX[roomCellIndex] = roomXCarve
+				cellY[roomCellIndex] = roomYCarve
+				grid[roomGridKey] = roomCellIndex
+				cellKey[roomCellIndex] = roomGridKey
 				cellCount += 1
-				if abs(x) == half or abs(y) == half:
-					if cellIndex not in frontier:
-						frontier.append(cellIndex)
+				absX = x
+				if absX < 0: absX = -absX
+				absY = y
+				if absY < 0: absY = -absY
+				if absX == halfRoomSize or absY == halfRoomSize:
+					if roomCellIndex not in frontier:
+						frontier.append(roomCellIndex)
 			# Connect internal neighbors
 			for dir in 4:
-				var px = nx + DX[dir]
-				var py = ny + DY[dir]
-				if abs(px - cx) <= half and abs(py - cy) <= half:
-					var newGridKey = cellKey[cellIndex] + KEY_DIR[dir]
-					if grid.has(newGridKey) && insideRoom(centerCellIndex, px, py, half):
-						connectCellToCell(cellIndex, grid[newGridKey], dir)
+				roomNeighborX = roomXCarve + DX[dir]
+				roomNeighborY = roomYCarve + DY[dir]
+				absX = roomNeighborX - choosenCellX
+				if absX < 0: absX = -absX
+				absY = roomNeighborY - choosenCellY
+				if absY < 0: absY = -absY
+				if absX <= halfRoomSize and absY <= halfRoomSize:
+					roomNeighborGridKey = cellKey[roomCellIndex] + KEY_DIR[dir]
+					if grid.has(roomNeighborGridKey) && insideRoom(frontierIndexChoosen, roomNeighborX, roomNeighborY, halfRoomSize):
+						connectCellToCell(roomCellIndex, grid[roomNeighborGridKey], dir)
 
 func connectCellToCell(idxCellSource: int, idxCellTarget: int, dir: int):
 	if cellSocketMask[idxCellSource] & (1 << dir):
 		return
-	var opp = DOPP[dir]
+	connectOpp = DOPP[dir]
 	cellSocketMask[idxCellSource] |= (1 << dir)
-	cellSocketMask[idxCellTarget] |= (1 << opp)
-	cellNeighbors[idxCellSource * 4 + dir] = idxCellTarget
-	cellNeighbors[idxCellTarget * 4 + opp] = idxCellSource
+	cellSocketMask[idxCellTarget] |= (1 << connectOpp)
+	cellNeighbors[(idxCellSource << 2 ) + dir] = idxCellTarget
+	cellNeighbors[(idxCellTarget << 2 ) + connectOpp] = idxCellSource
 
 func connectAllNeighbors(cellIndex:int) -> void:
-	var k = cellKey[cellIndex]
+	connectAllIndex = cellKey[cellIndex]
 	for dir in 4:
-		var neighborKey = k + KEY_DIR[dir]
-		if !grid.has(neighborKey):
+		connectAllNeighborKey = connectAllIndex + KEY_DIR[dir]
+		if !grid.has(connectAllNeighborKey):
 			continue
-		var neighborIndex = grid[neighborKey]
-		connectCellToCell(cellIndex, neighborIndex, dir)
+		connectAllNeighborIndex = grid[connectAllNeighborKey]
+		connectCellToCell(cellIndex, connectAllNeighborIndex, dir)
 
-func placeNeighborCell(frontierIndex: int) -> void:
-	var cellIndex = frontier[frontierIndex]
-	var cx = cellX[cellIndex]
-	var cy = cellY[cellIndex]
+func placeNeighborCell() -> void:
 	# O(1) Cyclic direction to avoid a O(n) shuffle
-	var startDir = rng.randi(0, 3) # remove after direction bias done
+	neighborStartDir = rng.randi(0, 3) # remove after direction bias done
 	for i in 4:
-		var dir = (startDir + i) & 3
-		var gridKey = cellKey[cellIndex] + KEY_DIR[dir]
-		if (grid.has(gridKey)):
+		neighborDir = (neighborStartDir + i) & 3
+		neighborDirX = DX[neighborDir]
+		neighborDirY = DY[neighborDir]
+		neighborGridKey = cellKey[frontierIndexChoosen] + KEY_DIR[neighborDir]
+		if (grid.has(neighborGridKey)):
 			continue
 		if !isFilled:
 			# countNeighbors inlined here
-			var neighborCount = 0
+			neighborCount = 0
 			for ndir in 4:
-				if grid.has(gridKey + KEY_DIR[ndir]):
+				if grid.has(neighborGridKey + KEY_DIR[ndir]):
 					neighborCount += 1
 					if neighborCount > 1:
 						break
 			if isStrictMaze and neighborCount > 1:
 				continue
-		var px = cx + DX[dir]
-		var py = cy + DY[dir]
-		if isFilled and !shape.call(px, py):
+		neighborX = choosenCellX + neighborDirX
+		neighborY = choosenCellY + neighborDirY
+		if isFilled and !shape.call(neighborX, neighborY):
 			continue
-		var weight = directionWeight(dir, px, py, cellDirection[cellIndex])
-		if isFilled or rng.randf() < weight:
+		directionWeight()
+		if isFilled or rng.randf() < neighborWeight:
 			frontierDecayRandomizer()
-			var newCellIndex = cellCount
-			cellX[newCellIndex] = px
-			cellY[newCellIndex] = py
-			cellDirection[newCellIndex] = dir
-			grid[gridKey] = newCellIndex
-			cellKey[newCellIndex] = gridKey
+			newNeighborIndex = cellCount
+			cellX[newNeighborIndex] = neighborX
+			cellY[newNeighborIndex] = neighborY
+			cellDirection[newNeighborIndex] = neighborDir
+			grid[neighborGridKey] = newNeighborIndex
+			cellKey[newNeighborIndex] = neighborGridKey
 			cellCount += 1;
-			frontier.append(newCellIndex)
+			frontier.append(newNeighborIndex)
 			if isFilled:
-				connectAllNeighbors(newCellIndex)
+				connectAllNeighbors(newNeighborIndex)
 			else:
-				connectCellToCell(cellIndex, newCellIndex, dir)
+				connectCellToCell(frontierIndexChoosen, newNeighborIndex, neighborDir)
 			return
-	frontierRemove(frontierIndex)
+	frontierRemove(frontierIndexChoice)
 
-func directionWeight(dir:int, cx: int, cy: int, prevDir: int) -> float:
-	var weight := 1.0
-	var dirX = DX[dir]
-	var dirY = DY[dir]
-	weight += (
-		dirX * globalDirectionBias[0] +
-		dirY * globalDirectionBias[1]
+func directionWeight() -> void:
+	neighborWeight = 1.0
+	neighborWeight += (
+		neighborDirX * globalDirectionBias[0] +
+		neighborDirY * globalDirectionBias[1]
 	) * globalBiasStrength + (
-		dirX * dirNoise.get_noise_2d(cx, cy) +
-		dirY * dirNoise.get_noise_2d(cx + 1000, cy + 1000)
+		neighborDirX * dirNoise.get_noise_2d(neighborX, neighborY) +
+		neighborDirY * dirNoise.get_noise_2d(neighborX + 1000, neighborY + 1000)
 	) * noiseBiasStrength
-	if dir == prevDir:
-		weight += directionMomentum
-	return max(weight, 0.05)
+	if neighborDir == cellDirection[frontierIndexChoosen]:
+		neighborWeight += directionMomentum
+	neighborWeight = max(neighborWeight, 0.05)
 
 func frontierDecayRandomizer() -> void:
-	var frontierSize = frontier.size()
 	if frontierSize > 1 and rng.randf() < frontierDecay:
 		frontierRemove(
 			rng.randi(0, frontierSize - 1)
@@ -342,13 +383,14 @@ func frontierDecayRandomizer() -> void:
 
 func frontierRemove(i):
 	# Swap remove O(1) instead of .erase() O(n)
-	var last = frontier.size() - 1
-	frontier[i] = frontier[last]
+	lastFrontierForRemoval = frontierSize - 1
+	frontier[i] = frontier[lastFrontierForRemoval]
 	frontier.pop_back()
 
 func socketRandomConnecter() -> void:
 	if 0 >= loopChance:
 		return;
+	var neighborIndex: int
 	for idx in range(cellCount):
 		for dir in 4:
 			# Avoid double check
@@ -358,15 +400,16 @@ func socketRandomConnecter() -> void:
 				continue
 			if rng.randf() >= loopChance:
 				continue
-			var neighborIndex = cellNeighbors[idx*4+dir]
+			neighborIndex = cellNeighbors[(idx << 2)+dir]
 			if -1 != neighborIndex:
 				connectCellToCell(idx, neighborIndex, dir)
 
 func insideRoom(centerIndex, x, y, half):
-	return (
-		abs(x - cellX[centerIndex]) <= half
-		and abs(y - cellY[centerIndex]) <= half
-	)
+	absX = x - cellX[centerIndex]
+	if absX < 0: absX = -absX
+	absY = y - cellY[centerIndex]
+	if absY < 0: absY = -absY
+	return (absX <= half and absY <= half)
 
 func recomputeHeat():
 	var startIndex = 0
@@ -374,12 +417,16 @@ func recomputeHeat():
 	var queue = []
 	var qi = 0
 	queue.append(startIndex)
+	
+	# Pre allocation for opti
+	var currentIndex: int
+	var neighborIndex: int
 	while qi < queue.size():
-		var currentIndex = queue[qi]
+		currentIndex = queue[qi]
 		qi += 1
 		for dir in 4:
 			if cellSocketMask[currentIndex] & (1 << dir):
-				var neighborIndex = cellNeighbors[currentIndex * 4 + dir]
+				neighborIndex = cellNeighbors[(currentIndex << 2) + dir]
 				if -1 == neighborIndex:
 					continue
 				if cellHeat[neighborIndex] != -1:
