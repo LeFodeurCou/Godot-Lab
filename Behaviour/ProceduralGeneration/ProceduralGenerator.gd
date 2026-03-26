@@ -3,18 +3,19 @@ extends Object
 class_name ProceduralGenerator
 
 # SoA (Structure of Arrays) : Replace Cell class
-var cellX: Array = PackedInt32Array()
-var cellY: Array = PackedInt32Array()
-var cellDirection: Array = PackedByteArray()
+var cellX := PackedInt32Array()
+var cellY := PackedInt32Array()
+var cellDirection := PackedByteArray()
 var cellNeighbors := PackedInt32Array()
-var cellHeat: Array = PackedInt32Array()
-var cellSocketMask: Array = PackedByteArray()
+var cellHeat := PackedInt32Array()
+var cellSocketMask := PackedByteArray()
 var cellKey := PackedInt64Array()
-var cellStructureType: Array = PackedByteArray()
+var cellStructureType := PackedByteArray()
 
 # Internal values
 var grid: Dictionary
-var frontier: Array = PackedInt32Array()
+var frontier := PackedInt32Array()
+var inFrontier := PackedByteArray()  # sized to cellNumber, 0 or 1
 var cellCount: int
 var graphBuildProgression: float
 # Noise bias direction
@@ -85,8 +86,6 @@ var roomThreshold: float
 var maxRooms: float # float instead int to avoid narrowing conversion
 var roomCoef: float
 var halfRoomSize: int
-var roomXCheck: int
-var roomYCheck: int
 var roomXCarve: int
 var roomYCarve: int
 var roomGridKey: int
@@ -167,6 +166,8 @@ func soaClearAndInit() -> void:
 # Internal values initialization (avoid memory leak)
 func internalValuesInit() -> void:
 	grid = {}
+	inFrontier.resize(cellNumber)
+	inFrontier.fill(0)
 	cellCount = 1
 	graphBuildProgression = 0.0
 	# Noise direction setup
@@ -183,6 +184,7 @@ func create() -> void:
 	var startKey = key(cellNumber, cellNumber)
 	cellKey[0] = startKey
 	grid[startKey] = 0
+	inFrontier[0] = 1
 	frontier.append(0)
 	
 	# First phase : graph generation
@@ -251,43 +253,46 @@ func placeRoomIfPossible() -> bool:
 			return true
 	return false
 
-func canPlaceRoomXY(size:int) -> bool:
-	# a bit shift to the right is a division by 2
-	# eg. 4 is 100, 2 is 10 then 4 >> 1 == 2
+func canPlaceRoomXY(size: int) -> bool:
 	neighborCount = 0
-	for x in range(-halfRoomSize, halfRoomSize + 1):
-		for y in range(-halfRoomSize, halfRoomSize + 1):
-			roomXCheck = choosenCellX + x
-			roomYCheck = choosenCellY + y
-			if grid.has(key(roomXCheck, roomYCheck)):
+	var diameter = size  # -half to +half inclusive
+	var baseKey = key(choosenCellX - halfRoomSize, choosenCellY - halfRoomSize)
+	var rowKey: int
+	for x in diameter + 1:
+		rowKey = baseKey + (x << 32)  # step x by incrementing upper 32 bits
+		for y in diameter + 1:
+			if grid.has(rowKey + y):  # step y by incrementing lower 32 bits
 				neighborCount += 1
-				# if less than size - 1 only the first cell become a room
-				# size - 1 to avoid room collapsing
 				if neighborCount > size - 1:
 					return false
 	return true
 	
 func carveRoomXY():
-	for x in range(-halfRoomSize, halfRoomSize + 1):
-		for y in range(-halfRoomSize, halfRoomSize + 1):
-			roomXCarve = choosenCellX + x
-			roomYCarve = choosenCellY + y
-			roomGridKey = key(roomXCarve, roomYCarve)
-			if grid.has(roomGridKey):
-				roomCellIndex = grid[roomGridKey]
+	var baseKey = key(choosenCellX - halfRoomSize, choosenCellY - halfRoomSize)
+	var rowKey: int
+	var cellGridKey: int
+	for x in range(0, halfRoomSize * 2 + 1):
+		rowKey = baseKey + (x << 32)
+		for y in range(0, halfRoomSize * 2 + 1):
+			cellGridKey = rowKey + y
+			roomXCarve = choosenCellX - halfRoomSize + x
+			roomYCarve = choosenCellY - halfRoomSize + y
+			if grid.has(cellGridKey):
+				roomCellIndex = grid[cellGridKey]
 			else:
 				roomCellIndex = cellCount
 				cellX[roomCellIndex] = roomXCarve
 				cellY[roomCellIndex] = roomYCarve
-				grid[roomGridKey] = roomCellIndex
-				cellKey[roomCellIndex] = roomGridKey
+				grid[cellGridKey] = roomCellIndex
+				cellKey[roomCellIndex] = cellGridKey
 				cellCount += 1
-				absX = x
+				absX = x - halfRoomSize
 				if absX < 0: absX = -absX
-				absY = y
+				absY = y - halfRoomSize
 				if absY < 0: absY = -absY
 				if absX == halfRoomSize or absY == halfRoomSize:
-					if roomCellIndex not in frontier:
+					if inFrontier[roomCellIndex] == 0:
+						inFrontier[roomCellIndex] = 1
 						frontier.append(roomCellIndex)
 			# Connect internal neighbors
 			for dir in 4:
@@ -298,9 +303,9 @@ func carveRoomXY():
 				absY = roomNeighborY - choosenCellY
 				if absY < 0: absY = -absY
 				if absX <= halfRoomSize and absY <= halfRoomSize:
-					roomNeighborGridKey = cellKey[roomCellIndex] + KEY_DIR[dir]
-					if grid.has(roomNeighborGridKey) && insideRoom(frontierIndexChoosen, roomNeighborX, roomNeighborY, halfRoomSize):
-						connectCellToCell(roomCellIndex, grid[roomNeighborGridKey], dir)
+					var neighborKey = cellGridKey + KEY_DIR[dir]
+					if grid.has(neighborKey):
+						connectCellToCell(roomCellIndex, grid[neighborKey], dir)
 
 func connectCellToCell(idxCellSource: int, idxCellTarget: int, dir: int):
 	if cellSocketMask[idxCellSource] & (1 << dir):
@@ -321,13 +326,16 @@ func connectAllNeighbors(cellIndex:int) -> void:
 		connectCellToCell(cellIndex, connectAllNeighborIndex, dir)
 
 func placeNeighborCell() -> void:
+	var noiseX = dirNoise.get_noise_2d(choosenCellX, choosenCellY)
+	var noiseY = dirNoise.get_noise_2d(choosenCellX + 1000, choosenCellY + 1000)
+	var frontierKeyChoosen =  cellKey[frontierIndexChoosen]
 	# O(1) Cyclic direction to avoid a O(n) shuffle
 	neighborStartDir = rng.randi(0, 3) # remove after direction bias done
 	for i in 4:
 		neighborDir = (neighborStartDir + i) & 3
 		neighborDirX = DX[neighborDir]
 		neighborDirY = DY[neighborDir]
-		neighborGridKey = cellKey[frontierIndexChoosen] + KEY_DIR[neighborDir]
+		neighborGridKey = frontierKeyChoosen + KEY_DIR[neighborDir]
 		if (grid.has(neighborGridKey)):
 			continue
 		if !isFilled:
@@ -344,7 +352,7 @@ func placeNeighborCell() -> void:
 		neighborY = choosenCellY + neighborDirY
 		if isFilled and !shape.call(neighborX, neighborY):
 			continue
-		directionWeight()
+		directionWeight(noiseX, noiseY)
 		if isFilled or rng.randf() < neighborWeight:
 			frontierDecayRandomizer()
 			newNeighborIndex = cellCount
@@ -354,6 +362,7 @@ func placeNeighborCell() -> void:
 			grid[neighborGridKey] = newNeighborIndex
 			cellKey[newNeighborIndex] = neighborGridKey
 			cellCount += 1;
+			inFrontier[newNeighborIndex] = 1
 			frontier.append(newNeighborIndex)
 			if isFilled:
 				connectAllNeighbors(newNeighborIndex)
@@ -362,14 +371,14 @@ func placeNeighborCell() -> void:
 			return
 	frontierRemove(frontierIndexChoice)
 
-func directionWeight() -> void:
+func directionWeight(noiseX: float, noiseY: float) -> void:
 	neighborWeight = 1.0
 	neighborWeight += (
 		neighborDirX * globalDirectionBias[0] +
 		neighborDirY * globalDirectionBias[1]
 	) * globalBiasStrength + (
-		neighborDirX * dirNoise.get_noise_2d(neighborX, neighborY) +
-		neighborDirY * dirNoise.get_noise_2d(neighborX + 1000, neighborY + 1000)
+		neighborDirX * noiseX +
+		neighborDirY * noiseY
 	) * noiseBiasStrength
 	if neighborDir == cellDirection[frontierIndexChoosen]:
 		neighborWeight += directionMomentum
@@ -383,19 +392,20 @@ func frontierDecayRandomizer() -> void:
 
 func frontierRemove(i):
 	# Swap remove O(1) instead of .erase() O(n)
+	inFrontier[frontier[i]] = 0
 	lastFrontierForRemoval = frontierSize - 1
 	frontier[i] = frontier[lastFrontierForRemoval]
-	frontier.pop_back()
+	#frontier.pop_back()
+	frontier.resize(frontier.size() - 1)  # instead of pop_back()
 
 func socketRandomConnecter() -> void:
 	if 0 >= loopChance:
 		return;
 	var neighborIndex: int
+	# Avoid double check
+	var dirCount = 4 if canLoopDoubleCheck else 2
 	for idx in range(cellCount):
-		for dir in 4:
-			# Avoid double check
-			if !canLoopDoubleCheck and (dir == DIR_LEFT or dir == DIR_RIGHT):
-				continue
+		for dir in dirCount:
 			if cellSocketMask[idx] & (1 << dir):
 				continue
 			if rng.randf() >= loopChance:
@@ -404,35 +414,25 @@ func socketRandomConnecter() -> void:
 			if -1 != neighborIndex:
 				connectCellToCell(idx, neighborIndex, dir)
 
-func insideRoom(centerIndex, x, y, half):
-	absX = x - cellX[centerIndex]
-	if absX < 0: absX = -absX
-	absY = y - cellY[centerIndex]
-	if absY < 0: absY = -absY
-	return (absX <= half and absY <= half)
-
 func recomputeHeat():
-	var startIndex = 0
-	cellHeat[startIndex] = 0
-	var queue = []
+	var queue := PackedInt32Array()
+	queue.append(0)  # let it grow naturally
+	cellHeat[0] = 0
 	var qi = 0
-	queue.append(startIndex)
-	
-	# Pre allocation for opti
 	var currentIndex: int
 	var neighborIndex: int
-	while qi < queue.size():
+	var qSize = 1
+	while qi < qSize:
 		currentIndex = queue[qi]
 		qi += 1
 		for dir in 4:
 			if cellSocketMask[currentIndex] & (1 << dir):
 				neighborIndex = cellNeighbors[(currentIndex << 2) + dir]
-				if -1 == neighborIndex:
-					continue
-				if cellHeat[neighborIndex] != -1:
+				if neighborIndex == -1 or cellHeat[neighborIndex] != -1:
 					continue
 				cellHeat[neighborIndex] = cellHeat[currentIndex] + 1
 				queue.append(neighborIndex)
+				qSize += 1
 
 # Store x and y as only one int using bitwise operation to save performances and memory
 # << 32 will move bits to "32 bit to left"
@@ -453,6 +453,7 @@ func key(x:int, y:int) -> int:
 func clearMemory() -> void:
 	# Internal values clear
 	frontier.clear()
+	inFrontier.clear()
 	grid.clear()
 	
 	# Config values clear

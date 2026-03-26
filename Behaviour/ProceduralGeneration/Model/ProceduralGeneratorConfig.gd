@@ -50,9 +50,9 @@ var roomCoefficient: Dictionary = {
 		0.8,
 	],
 	3: [
-		0.3, 
+		0.5, 
 		10, 
-		0.3,
+		0.2,
 	],
 } # 0.05 of cells can become a room candidate
 var roomSizes: Array = PackedInt32Array()
@@ -100,15 +100,6 @@ func circle(x:int, y:int) -> bool:
 	
 	var r = int((radius - 1) * 0.5)
 	return lx * lx + ly * ly <= r * r
-	
-#func square(x:int, y:int) -> bool:
-	## TODO see if r can be a little more to avoid dead cells from cellNumber
-	## TODO see if we can make even squares, for now it's mandatory odd with the origin as center
-	#var lx = x - cellNumber
-	#var ly = y - cellNumber
-	#
-	#var r = int((radius - 1) * 0.5)
-	#return abs(lx) <= r and abs(ly) <= r
 	
 func square(x:int, y:int) -> bool:
 	var lx = x - cellNumber
