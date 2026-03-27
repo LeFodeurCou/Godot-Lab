@@ -68,6 +68,8 @@ const KEY_DIR = [
 	-(1 << 32)    # left  (x - 1)
 ]
 
+const FULL_MASK = (1 << 4) - 1
+
 # Pre allocated variables for optimization
 var frontierIndexChoice: int
 var frontierCoefficient: float
@@ -159,7 +161,7 @@ func soaClearAndInit() -> void:
 	cellStructureType.resize(cellNumber)
 	
 	# Soa Cell init values
-	cellDirection.fill(-1)
+	cellDirection.fill(255) # Initialy initialized to -1, implicitely 255
 	cellHeat.fill(-1)
 	cellSocketMask.fill(0)
 	
@@ -184,6 +186,7 @@ func create() -> void:
 	var startKey = key(cellNumber, cellNumber)
 	cellKey[0] = startKey
 	grid[startKey] = 0
+	cellDirection[0] = rng.randi(0, 3)
 	inFrontier[0] = 1
 	frontier.append(0)
 	
@@ -313,6 +316,16 @@ func connectCellToCell(idxCellSource: int, idxCellTarget: int, dir: int):
 	connectOpp = DOPP[dir]
 	cellSocketMask[idxCellSource] |= (1 << dir)
 	cellSocketMask[idxCellTarget] |= (1 << connectOpp)
+	if (
+		cellSocketMask[idxCellSource] == FULL_MASK
+		and inFrontier[idxCellSource] != -1
+	):
+		frontierRemove(inFrontier[idxCellSource])
+	if (
+		cellSocketMask[idxCellTarget] == FULL_MASK
+		and inFrontier[idxCellTarget] != -1
+	):
+		frontierRemove(inFrontier[idxCellTarget])
 	cellNeighbors[(idxCellSource << 2 ) + dir] = idxCellTarget
 	cellNeighbors[(idxCellTarget << 2 ) + connectOpp] = idxCellSource
 
@@ -329,24 +342,28 @@ func placeNeighborCell() -> void:
 	var noiseX = dirNoise.get_noise_2d(choosenCellX, choosenCellY)
 	var noiseY = dirNoise.get_noise_2d(choosenCellX + 1000, choosenCellY + 1000)
 	var frontierKeyChoosen =  cellKey[frontierIndexChoosen]
+	var dir = cellDirection[frontierIndexChoosen]
+	var forbidden = -1
+	if dir < 4:
+		forbidden = DOPP[dir]
 	# O(1) Cyclic direction to avoid a O(n) shuffle
 	neighborStartDir = rng.randi(0, 3) # remove after direction bias done
 	for i in 4:
 		neighborDir = (neighborStartDir + i) & 3
+		if forbidden != -1 and  neighborDir == forbidden:
+			continue
 		neighborDirX = DX[neighborDir]
 		neighborDirY = DY[neighborDir]
 		neighborGridKey = frontierKeyChoosen + KEY_DIR[neighborDir]
 		if (grid.has(neighborGridKey)):
 			continue
 		if !isFilled:
-			# countNeighbors inlined here
-			neighborCount = 0
-			for ndir in 4:
-				if grid.has(neighborGridKey + KEY_DIR[ndir]):
-					neighborCount += 1
-					if neighborCount > 1:
-						break
-			if isStrictMaze and neighborCount > 1:
+			# countNeighbors inlined here TOP, RIGHT, DOWN, LEFT
+			var mask = int(grid.has(neighborGridKey - 1)) \
+				| (int(grid.has(neighborGridKey + (1 << 32))) << 1) \
+				| (int(grid.has(neighborGridKey + 1)) << 2) \
+				| (int(grid.has(neighborGridKey - (1 << 32))) << 3)
+			if isStrictMaze and (mask & (mask - 1)) != 0:
 				continue
 		neighborX = choosenCellX + neighborDirX
 		neighborY = choosenCellY + neighborDirY
@@ -390,7 +407,7 @@ func frontierDecayRandomizer() -> void:
 			rng.randi(0, frontierSize - 1)
 		)
 
-func frontierRemove(i):
+func frontierRemove(i: int):
 	# Swap remove O(1) instead of .erase() O(n)
 	inFrontier[frontier[i]] = 0
 	lastFrontierForRemoval = frontierSize - 1
