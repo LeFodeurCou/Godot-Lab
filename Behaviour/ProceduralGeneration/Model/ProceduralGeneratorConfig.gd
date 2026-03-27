@@ -12,9 +12,9 @@ var rng: RandomGenerator
 # 100K ~1.5s
 # 1M ~16s
 # 10M ~ 3m
-#var cellNumber: int = 16*16 # Minecraft logic
+var cellNumber: int = 16*16 # Minecraft logic
 #var cellNumber: int = 16*16*4 # also Minecraft logic but bigger
-var cellNumber: int = 10000000 # Hardest stress test
+#var cellNumber: int = 10000000 # Hardest stress test
 
 # Zone config
 var isFilled = false

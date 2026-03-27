@@ -15,6 +15,9 @@ var cellStructureType := PackedByteArray()
 # Internal values
 var grid: Dictionary
 var frontier := PackedInt32Array()
+var frontierHead := 0
+var frontierTail := 0
+var frontierCount := 0
 var inFrontier := PackedByteArray()  # sized to cellNumber, 0 or 1
 var cellCount: int
 var graphBuildProgression: float
@@ -73,7 +76,6 @@ const FULL_MASK = (1 << 4) - 1
 # Pre allocated variables for optimization
 var frontierIndexChoice: int
 var frontierCoefficient: float
-var frontierSize: int
 var frontierIndexChoosen: int
 var choosenCellX: int
 var choosenCellY: int
@@ -168,6 +170,10 @@ func soaClearAndInit() -> void:
 # Internal values initialization (avoid memory leak)
 func internalValuesInit() -> void:
 	grid = {}
+	frontier.resize(cellNumber) # max possible
+	frontierHead = 0
+	frontierTail = 0
+	frontierCount = 0
 	inFrontier.resize(cellNumber)
 	inFrontier.fill(0)
 	cellCount = 1
@@ -188,25 +194,24 @@ func create() -> void:
 	grid[startKey] = 0
 	cellDirection[0] = rng.randi(0, 3)
 	inFrontier[0] = 1
-	frontier.append(0)
+	frontier_push(0)
 	
 	# First phase : graph generation
 	# Here we check frontier size to avoid pathological seeds
-	while cellCount < cellNumber and frontier.size() > 0:
+	while cellCount < cellNumber and frontierCount > 0:
 		graphBuildProgression = float(cellCount) / float(cellNumber)
-		frontierSize = frontier.size()
 		# Branch Depth Bias
 		frontierCoefficient = rng.randf()
 		if isFilled or frontierCoefficient < 0.6:
 			# Take the last frontier cell
-			frontierIndexChoice = frontierSize - 1
+			frontierIndexChoice = frontierCount - 1
 		elif frontierCoefficient < 0.85:
 			# Take a frontier by entropy, meaning less socketed are priorized
 			frontierIndexChoice = highestEntropyFrontier()
 		else:
 			# Take the oldest frontier made
-			frontierIndexChoice = int(frontierSize * rng.randf() * rng.randf())
-		frontierIndexChoosen = frontier[frontierIndexChoice]
+			frontierIndexChoice = int(frontierCount * rng.randf() * rng.randf())
+		frontierIndexChoosen = frontier_get(frontierIndexChoice)
 		choosenCellX = cellX[frontierIndexChoosen]
 		choosenCellY = cellY[frontierIndexChoosen]
 		if(!placeRoomIfPossible()):
@@ -224,8 +229,8 @@ func highestEntropyFrontier()-> int:
 	# 6 directions is made for 3D plan, x/-x, y/-y and z/-z
 	bestEntropy = 64
 	for i in 5:
-		entropicFrontierIndex = rng.randi(0, frontierSize-1)
-		entropy = cellSocketMask[frontier[entropicFrontierIndex]]
+		entropicFrontierIndex = rng.randi(0, frontierCount-1)
+		entropy = cellSocketMask[frontier_get(entropicFrontierIndex)]
 		if entropy < bestEntropy:
 			bestEntropy = entropy
 			bestIndex = entropicFrontierIndex
@@ -296,7 +301,7 @@ func carveRoomXY():
 				if absX == halfRoomSize or absY == halfRoomSize:
 					if inFrontier[roomCellIndex] == 0:
 						inFrontier[roomCellIndex] = 1
-						frontier.append(roomCellIndex)
+						frontier_push(roomCellIndex)
 			# Connect internal neighbors
 			for dir in 4:
 				roomNeighborX = roomXCarve + DX[dir]
@@ -320,12 +325,12 @@ func connectCellToCell(idxCellSource: int, idxCellTarget: int, dir: int):
 		cellSocketMask[idxCellSource] == FULL_MASK
 		and inFrontier[idxCellSource] != -1
 	):
-		frontierRemove(inFrontier[idxCellSource])
+		frontier_remove(inFrontier[idxCellSource])
 	if (
 		cellSocketMask[idxCellTarget] == FULL_MASK
 		and inFrontier[idxCellTarget] != -1
 	):
-		frontierRemove(inFrontier[idxCellTarget])
+		frontier_remove(inFrontier[idxCellTarget])
 	cellNeighbors[(idxCellSource << 2 ) + dir] = idxCellTarget
 	cellNeighbors[(idxCellTarget << 2 ) + connectOpp] = idxCellSource
 
@@ -380,13 +385,13 @@ func placeNeighborCell() -> void:
 			cellKey[newNeighborIndex] = neighborGridKey
 			cellCount += 1;
 			inFrontier[newNeighborIndex] = 1
-			frontier.append(newNeighborIndex)
+			frontier_push(newNeighborIndex)
 			if isFilled:
 				connectAllNeighbors(newNeighborIndex)
 			else:
 				connectCellToCell(frontierIndexChoosen, newNeighborIndex, neighborDir)
 			return
-	frontierRemove(frontierIndexChoice)
+	frontier_remove(frontierIndexChoice)
 
 func directionWeight(noiseX: float, noiseY: float) -> void:
 	neighborWeight = 1.0
@@ -402,18 +407,8 @@ func directionWeight(noiseX: float, noiseY: float) -> void:
 	neighborWeight = max(neighborWeight, 0.05)
 
 func frontierDecayRandomizer() -> void:
-	if frontierSize > 1 and rng.randf() < frontierDecay:
-		frontierRemove(
-			rng.randi(0, frontierSize - 1)
-		)
-
-func frontierRemove(i: int):
-	# Swap remove O(1) instead of .erase() O(n)
-	inFrontier[frontier[i]] = 0
-	lastFrontierForRemoval = frontierSize - 1
-	frontier[i] = frontier[lastFrontierForRemoval]
-	#frontier.pop_back()
-	frontier.resize(frontier.size() - 1)  # instead of pop_back()
+	if frontierCount > 1 and rng.randf() < frontierDecay:
+		frontier_remove(rng.randi(0, frontierCount - 1))
 
 func socketRandomConnecter() -> void:
 	if 0 >= loopChance:
@@ -450,6 +445,30 @@ func recomputeHeat():
 				cellHeat[neighborIndex] = cellHeat[currentIndex] + 1
 				queue.append(neighborIndex)
 				qSize += 1
+
+func frontier_push(v: int):
+	frontier[frontierTail] = v
+	frontierTail = (frontierTail + 1) % cellNumber
+	frontierCount += 1
+	
+func frontier_pop() -> int:
+	var v = frontier[frontierHead]
+	frontierHead = (frontierHead + 1) % cellNumber
+	frontierCount -= 1
+	return v
+	
+func frontier_get(i: int) -> int:
+	return frontier[(frontierHead + i) % cellNumber]
+	
+func frontier_remove(i: int):
+	# i = logical index (0 → frontierCount-1)
+
+	var real = (frontierHead + i) % cellNumber
+	var last = (frontierHead + frontierCount - 1) % cellNumber
+
+	frontier[real] = frontier[last]
+	frontierTail = (frontierTail - 1 + cellNumber) % cellNumber
+	frontierCount -= 1
 
 # Store x and y as only one int using bitwise operation to save performances and memory
 # << 32 will move bits to "32 bit to left"
