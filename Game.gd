@@ -96,3 +96,6 @@ func spawnPlayer() -> void:
 func connectPlayerDebug(target: Object) -> void:
 	if player:
 		Game.player.connect("debugToggled", Callable(target, "_onDebugToggled"))
+
+func quit() -> void:
+	get_tree().quit()
