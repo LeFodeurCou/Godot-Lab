@@ -10,6 +10,7 @@ var currentWorld: World
 var maxWorldCacheTimeBeforReset: int = 8 * 60 * 1000 # (8 minutes * 60 seconds * 1000 ms)
 
 func _ready() -> void:
+	self.add_child(ContextUI.new())
 	spawnPlayer()
 	changeWorld(
 		"res://World/Static/MainWorld.tscn"

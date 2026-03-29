@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://geliqshupirs"]
+
+[ext_resource type="Script" uid="uid://bffgfn6b4gh68" path="res://UI/InGameMainMenu/UiInGameMainMenu.gd" id="1_csqjx"]
+
+[node name="UiInGameMainMenu" type="CanvasLayer" unique_id=1234553545]
+script = ExtResource("1_csqjx")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=838629019]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -70.0
+offset_top = -33.0
+offset_right = 70.0
+offset_bottom = 33.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResumeButton" type="Button" parent="VBoxContainer" unique_id=1347436606]
+layout_mode = 2
+text = "Resume"
+
+[node name="ExitButton" type="Button" parent="VBoxContainer" unique_id=369157275]
+layout_mode = 2
+text = "Exit"
+
+[node name="ExitConfirmationDialog" type="ConfirmationDialog" parent="." unique_id=1506169706]
+title = "Exit Game"
+ok_button_text = "OK"
+dialog_text = "Are you sure you want to exit ?"
