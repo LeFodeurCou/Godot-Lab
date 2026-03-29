@@ -7,6 +7,8 @@ var pauseAllowed: bool
 
 signal closeRequest
 
-func open(): pass
-func close(): pass
+func open():
+	push_warning("UiBase.open() not implemented in " + name)
+func close(): 
+	push_warning("UiBase.close() not implemented in " + name)
 func requestClose(): closeRequest.emit()

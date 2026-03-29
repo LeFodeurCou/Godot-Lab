@@ -6,13 +6,13 @@ class_name ContextUI
 @export var pause_allowed: bool = true
 
 var uiStack: Array[UiBase] = []
-var previousMouseMode
 var inGameMainMenu: UiInGameMainMenu
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	var scene = preload("res://UI/InGameMainMenu/UiInGameMainMenu.tscn")
 	inGameMainMenu = scene.instantiate()
+	add_child(inGameMainMenu)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
 func _unhandled_input(event: InputEvent) -> void:
@@ -24,7 +24,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		uiStack.back().requestClose()
 
 func _openUi(ui: UiBase) -> void:
-	add_child(ui)
 	uiStack.push_back(ui)
 	ui.previousMouseMode = Input.get_mouse_mode()
 	ui.pauseAllowed = pause_allowed
