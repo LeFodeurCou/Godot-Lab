@@ -21,9 +21,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if uiStack.is_empty():
 			_openUi(inGameMainMenu)
 			return
-		var lastUi = uiStack.pop_back()
-		if lastUi.has_method("close"):
-			lastUi.close()
+		uiStack.back().requestClose()
 
 func _openUi(ui: UiBase) -> void:
 	add_child(ui)
@@ -38,8 +36,8 @@ func _openUi(ui: UiBase) -> void:
 func _closeUi(ui: UiBase) -> void:
 	if uiStack.is_empty():
 		return
-	uiStack.pop_at(
-		uiStack.find(ui)
-	)
-	if ui.has_method("close"):
-		ui.close.call_deferred()
+	var index = uiStack.find(ui)
+	if index == -1:
+		return
+	uiStack.remove_at(index)
+	ui.close.call_deferred()
