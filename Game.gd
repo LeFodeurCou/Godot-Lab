@@ -1,6 +1,7 @@
 extends Node
 
 # Game.gd (AutoLoad)
+var isDebug = false
 var player: Player
 var loadedWorlds: Dictionary = {} # Resource -> Node
 var currentWorld: World
@@ -82,7 +83,7 @@ func cleanupWorlds(max_idle_time_ms := 60000): # 1 min
 		if now - entry.last_used > max_idle_time_ms:
 			if entry.world.get_parent():
 				entry.world.get_parent().remove_child(entry.world)
-			if player.isDebug:
+			if isDebug:
 				print("World " + path + " reset")
 			entry.world.queue_free()
 			loadedWorlds.erase(path)

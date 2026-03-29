@@ -59,7 +59,7 @@ func _onDebugToggled(value: bool) -> void:
 
 func generate(world: Node3D) -> Vector3i:
 	debugRoot = Node3D.new()
-	debugRoot.visible = Game.player.isDebug
+	debugRoot.visible = Game.isDebug
 	debugRoot.name = "DebugRoot"
 	world.add_child(debugRoot)
 	var originX = cellX[0]

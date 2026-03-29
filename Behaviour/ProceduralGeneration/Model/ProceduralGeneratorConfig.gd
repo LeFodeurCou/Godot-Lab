@@ -46,12 +46,12 @@ var directionMomentum: float = 0.3
 var roomCoefficient: Dictionary = {
 	5: [
 		1,
-		1, 
+		100, 
 		0.8,
 	],
 	3: [
 		0.5, 
-		10, 
+		1000, 
 		0.2,
 	],
 } # 0.05 of cells can become a room candidate

@@ -26,7 +26,7 @@ var elapsed
 
 func _ready():
 	Game.connectPlayerDebug(self)
-	self.get_parent().visible = Game.player.isDebug
+	self.get_parent().visible = Game.isDebug
 	# SoA Cell clear
 	cellX.clear()
 	cellY.clear()

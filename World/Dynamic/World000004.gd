@@ -46,7 +46,7 @@ func _onDebugToggled(value: bool) -> void:
 
 func createDebugOverlay(world: Node3D) -> void:
 	debugCanvas = CanvasLayer.new()
-	debugCanvas.visible = Game.player.isDebug
+	debugCanvas.visible = Game.isDebug
 	var overlay = DebugOverlay.new()
 	overlay.set_lines([
 		"Cells: %d" % generator.cellCount,
