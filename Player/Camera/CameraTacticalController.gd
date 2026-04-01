@@ -23,6 +23,7 @@ func playerProcess(player: CharacterBody3D, playerPivot: Node3D) -> void:
 	player.target_velocity.z = inputDir.z * player.speed
 
 func onActivate(player: CharacterBody3D) -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	# Reset player rotation
 	player.rotation = Vector3.ZERO
 	# Reset pivot rotation

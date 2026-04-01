@@ -5,22 +5,32 @@ var isDebug = false
 var player: Player
 var loadedWorlds: Dictionary = {} # Resource -> Node
 var currentWorld: World
+var contextUi: ContextUI
+var screenTransition: ScreenTransition
 
 # Game rules
 var maxWorldCacheTimeBeforReset: int = 8 * 60 * 1000 # (8 minutes * 60 seconds * 1000 ms)
 
 func _ready() -> void:
-	self.add_child(ContextUI.new())
-	spawnPlayer()
-	changeWorld(
-		"res://World/Static/MainWorld.tscn"
-	)
+	contextUi = ContextUI.new()
+	self.add_child(contextUi)
+	contextUi.loadOutGameMainMenu()
 	var timer = Timer.new()
 	timer.wait_time = 5.0
 	timer.autostart = true
 	timer.one_shot = false
 	timer.timeout.connect(_onCleanupTimer)
 	add_child(timer)
+	screenTransition = ScreenTransition.new()
+	add_child(screenTransition)
+
+func loadNewGame() -> void:
+	contextUi.resetUI()
+	contextUi.loadInGameMainMenu()
+	spawnPlayer()
+	changeWorld(
+		"res://World/Static/MainWorld.tscn"
+	)
 
 func _onCleanupTimer():
 	cleanupWorlds(maxWorldCacheTimeBeforReset)
@@ -29,7 +39,7 @@ func changeWorld(
 	path: String,
 	data: Dictionary = {}
 )-> void:
-
+	await screenTransition.fade_out()
 	var newWorld = getOrLoadWorld(path)
 	# 👉 If switching world
 	if currentWorld != newWorld:
@@ -54,6 +64,8 @@ func changeWorld(
 	var t: Transform3D = currentWorld.getSpawnPointById(data)
 	player.global_transform = t
 	player.stopMovement()
+	
+	await screenTransition.fade_in()
 
 func getOrLoadWorld(path: String) -> World:
 	if loadedWorlds.has(path):
@@ -99,3 +111,12 @@ func connectPlayerDebug(target: Object) -> void:
 
 func quit() -> void:
 	get_tree().quit()
+
+func quitRun() -> void:
+	await screenTransition.fade_out()
+	contextUi.resetUI()
+	contextUi.loadOutGameMainMenu()
+	remove_child(player)
+	player.queue_free()
+	cleanupWorlds(0)
+	await screenTransition.fade_in()

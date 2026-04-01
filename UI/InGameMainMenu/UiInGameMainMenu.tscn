@@ -30,11 +30,19 @@ grow_vertical = 2
 layout_mode = 2
 text = "Resume"
 
+[node name="ExitToOutGameMainMenu" type="Button" parent="VBoxContainer" unique_id=1716963014]
+layout_mode = 2
+text = "Exit to menu"
+
 [node name="ExitButton" type="Button" parent="VBoxContainer" unique_id=369157275]
 layout_mode = 2
-text = "Exit"
+text = "Exit Game"
 
-[node name="ExitConfirmationDialog" type="ConfirmationDialog" parent="." unique_id=1506169706]
+[node name="ExitGameConfirmationDialog" type="ConfirmationDialog" parent="." unique_id=1506169706]
 title = "Exit Game"
 ok_button_text = "OK"
 dialog_text = "Are you sure you want to exit ?"
+
+[node name="ExitRunConfirmationDialog" type="ConfirmationDialog" parent="." unique_id=759584137]
+ok_button_text = "OK"
+dialog_text = "Exit to menu - Unsaved progress will be lost."

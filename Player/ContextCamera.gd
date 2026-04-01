@@ -27,6 +27,8 @@ func _init(basePlayer: CharacterBody3D, forcedCamera: Variant = null):
 			cameraPivot.get_node("CameraDebug"),
 		]
 		cameras[0].current = true
+		if cameras[0].has_method("onActivate"):
+			cameras[0].onActivate(basePlayer)
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.

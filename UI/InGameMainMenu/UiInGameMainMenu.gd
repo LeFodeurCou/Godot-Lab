@@ -8,15 +8,23 @@ func _ready() -> void:
 	visible = false
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	$VBoxContainer/ResumeButton.pressed.connect(_onResumePressed)
+	$VBoxContainer/ExitToOutGameMainMenu.pressed.connect(_onQuitRunPressed)
+	$ExitRunConfirmationDialog.confirmed.connect(_onQuitRunConfirmed)
 	$VBoxContainer/ExitButton.pressed.connect(_onQuitPressed)
-	$ExitConfirmationDialog.confirmed.connect(_onQuitConfirmed)
+	$ExitGameConfirmationDialog.confirmed.connect(_onQuitConfirmed)
 	originalPosY = $VBoxContainer.position.y
 
 func _onResumePressed() -> void:
 	requestClose()
 
+func _onQuitRunPressed() -> void:
+	$ExitRunConfirmationDialog.popup_centered()
+
+func _onQuitRunConfirmed() -> void:
+	Game.quitRun()
+
 func _onQuitPressed() -> void:
-	$ExitConfirmationDialog.popup_centered()
+	$ExitGameConfirmationDialog.popup_centered()
 
 func _onQuitConfirmed() -> void:
 	Game.quit()
@@ -29,13 +37,15 @@ func open() -> void:
 	await enterAnimation()
 
 	
-func close() -> void:
+func close() -> Signal:
 	if pauseAllowed:
 		get_tree().paused = false
 	Input.set_mouse_mode(previousMouseMode)
-	await outAnimation()
+	var sig = outAnimation()
+	await sig
 	$VBoxContainer.position.y = originalPosY
 	self.visible = false
+	return sig
 	
 func enterAnimation() -> Signal:
 	$VBoxContainer.position.y = -300
