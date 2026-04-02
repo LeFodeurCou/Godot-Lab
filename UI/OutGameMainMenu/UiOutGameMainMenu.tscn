@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://br1ghcdkpphmy"]
 
 [ext_resource type="Script" uid="uid://0nuehtob6hh2" path="res://UI/OutGameMainMenu/UiOutGameMainMenu.gd" id="1_mbvh0"]
+[ext_resource type="PackedScene" uid="uid://dg0df4tfeprs3" path="res://UI/Settings/UiSettingsPanel.tscn" id="2_rrgj1"]
 
 [node name="OutGameMainMenu" type="CanvasLayer" unique_id=1972276516]
 script = ExtResource("1_mbvh0")
@@ -29,6 +30,10 @@ alignment = 1
 layout_mode = 2
 text = "New Game"
 
+[node name="SettingsButton" type="Button" parent="ColorRect/VBoxContainer" unique_id=1407090433]
+layout_mode = 2
+text = "Settings"
+
 [node name="ExitButton" type="Button" parent="ColorRect/VBoxContainer" unique_id=2014264370]
 layout_mode = 2
 text = "Exit Game"
@@ -36,3 +41,6 @@ text = "Exit Game"
 [node name="ExitConfirmationDialog" type="ConfirmationDialog" parent="." unique_id=1593002690]
 ok_button_text = "OK"
 dialog_text = "Are you sure you want to exit ?"
+
+[node name="UiSettingsPannel" parent="." unique_id=774527734 instance=ExtResource("2_rrgj1")]
+visible = false

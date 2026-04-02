@@ -1,0 +1,84 @@
+[gd_scene format=3 uid="uid://dg0df4tfeprs3"]
+
+[ext_resource type="Script" uid="uid://cttn7r2oycah8" path="res://UI/UiBase.gd" id="1_dcog4"]
+[ext_resource type="PackedScene" uid="uid://7ifewxwc5we3" path="res://UI/Settings/Display/DisplaySetting.tscn" id="2_p8nej"]
+
+[node name="UiSettingsPannel" type="CanvasLayer" unique_id=774527734]
+script = ExtResource("1_dcog4")
+metadata/_custom_type_script = "uid://cttn7r2oycah8"
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1766370547]
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_constants/margin_left = -450
+theme_override_constants/margin_right = 50
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer" unique_id=687342318]
+layout_mode = 2
+color = Color(0.827451, 0.3529412, 0.40784314, 1)
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer/ColorRect" unique_id=669338159]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/ColorRect/PanelContainer" unique_id=467922543]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer" unique_id=8839]
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer" unique_id=1925140982]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=1760887397]
+layout_mode = 2
+text = "Settings"
+
+[node name="Button" type="Button" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=10115037]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_horizontal = 10
+size_flags_vertical = 4
+text = "X"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer" unique_id=100750299]
+layout_mode = 2
+
+[node name="TabContainer" type="TabContainer" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer" unique_id=1424469667]
+layout_mode = 2
+current_tab = 0
+
+[node name="DisplaySetting" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/TabContainer" unique_id=1095961698 instance=ExtResource("2_p8nej")]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="Footer" type="HBoxContainer" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer" unique_id=2002315503]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 10
+theme_override_constants/separation = 12
+
+[node name="ApplyButton" type="Button" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/Footer" unique_id=28590300]
+layout_mode = 2
+text = "Apply"
+
+[node name="ResetButton" type="Button" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/Footer" unique_id=1011000141]
+layout_mode = 2
+text = "Reset"
+
+[node name="CancelButton" type="Button" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/Footer" unique_id=83869722]
+layout_mode = 2
+text = "Cancel"

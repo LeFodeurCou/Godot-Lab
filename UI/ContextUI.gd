@@ -26,8 +26,7 @@ func _ready() -> void:
 func loadOutGameMainMenu() -> void:
 	var scene = preload(UI_SCENES[UIType.OUT_GAME_MENU])
 	outGameMainMenu = scene.instantiate()
-	add_child(outGameMainMenu)
-	_openUi(outGameMainMenu)
+	openUi(outGameMainMenu)
 	
 func loadInGameMainMenu() -> void:
 	var scene = preload(UI_SCENES[UIType.IN_GAME_MENU])
@@ -36,27 +35,26 @@ func loadInGameMainMenu() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("escape"):
-		print('toto')
 		get_viewport().set_input_as_handled()
 		# 🔥 CLEAN DEAD REFERENCES
 		while not uiStack.is_empty() and not is_instance_valid(uiStack.back()):
 			uiStack.pop_back()
 		if uiStack.is_empty():
-			_openUi(inGameMainMenu)
+			openUi(inGameMainMenu)
 			return
 		uiStack.back().requestClose()
 
-func _openUi(ui: UiBase) -> void:
+func openUi(ui: UiBase) -> void:
 	if ui.get_parent() == null:
 		add_child(ui)
 	uiStack.push_back(ui)
 	ui.previousMouseMode = Input.get_mouse_mode()
 	ui.pauseAllowed = pause_allowed
 	if ui.has_signal("closeRequest"):
-		ui.closeRequest.connect(_closeUi.bind(ui))
+		ui.closeRequest.connect(closeUi.bind(ui))
 	ui.open()
 
-func _closeUi(ui: UiBase) -> void:
+func closeUi(ui: UiBase) -> void:
 	if uiStack.is_empty():
 		return
 	var index = uiStack.find(ui)
@@ -73,7 +71,11 @@ func _canBeFree(ui: UiBase) -> bool:
 func resetUI() -> void:
 	for ui in uiStack:
 		if is_instance_valid(ui):
-			ui.requestClose() # close brutally breaking animations
-			#await _closeUi(ui) # close smoothly, but animation can leak in another scene
+			#ui.requestClose() # close brutally breaking animations
+			#await closeUi(ui) # close smoothly, but animation can leak in another scene
+			# 🔥 restore state immediately (no await)
+			if ui.pauseAllowed:
+				get_tree().paused = false
+			Input.set_mouse_mode(ui.previousMouseMode)
 			ui.queue_free.call_deferred()
 	uiStack.clear()

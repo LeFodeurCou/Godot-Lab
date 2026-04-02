@@ -4,10 +4,17 @@ class_name UiInGameMainMenu
 
 var originalPosY: float
 
+var subMenus = {
+	settings = "res://UI/Settings/UiSettingsPanel.tscn"
+}
+
+var uiSettingsPanel: UiBase
+
 func _ready() -> void:
 	visible = false
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	$VBoxContainer/ResumeButton.pressed.connect(_onResumePressed)
+	$VBoxContainer/SettingsButton.pressed.connect(_onSettingsPressed)
 	$VBoxContainer/ExitToOutGameMainMenu.pressed.connect(_onQuitRunPressed)
 	$ExitRunConfirmationDialog.confirmed.connect(_onQuitRunConfirmed)
 	$VBoxContainer/ExitButton.pressed.connect(_onQuitPressed)
@@ -16,6 +23,15 @@ func _ready() -> void:
 
 func _onResumePressed() -> void:
 	requestClose()
+
+func _onSettingsPressed() -> void:
+	if uiSettingsPanel:
+		Game.contextUi.closeUi(uiSettingsPanel)
+	else:
+		uiSettingsPanel = load(subMenus.settings).instantiate()
+		Game.contextUi.openUi(
+			uiSettingsPanel
+		)
 
 func _onQuitRunPressed() -> void:
 	$ExitRunConfirmationDialog.popup_centered()
@@ -38,6 +54,8 @@ func open() -> void:
 
 	
 func close() -> Signal:
+	if uiSettingsPanel:
+		Game.contextUi.closeUi(uiSettingsPanel)
 	if pauseAllowed:
 		get_tree().paused = false
 	Input.set_mouse_mode(previousMouseMode)
