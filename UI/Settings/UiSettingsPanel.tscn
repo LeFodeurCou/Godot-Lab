@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://dg0df4tfeprs3"]
 
-[ext_resource type="Script" uid="uid://cttn7r2oycah8" path="res://UI/UiBase.gd" id="1_dcog4"]
+[ext_resource type="Script" uid="uid://cbmu1xpgi0khl" path="res://UI/Settings/UiSettingsPanel.gd" id="1_dcog4"]
 [ext_resource type="PackedScene" uid="uid://7ifewxwc5we3" path="res://UI/Settings/Display/DisplaySetting.tscn" id="2_p8nej"]
 
-[node name="UiSettingsPannel" type="CanvasLayer" unique_id=774527734]
+[node name="UiSettingsPanel" type="CanvasLayer" unique_id=774527734]
 script = ExtResource("1_dcog4")
 metadata/_custom_type_script = "uid://cttn7r2oycah8"
 
@@ -47,7 +47,7 @@ layout_mode = 2
 layout_mode = 2
 text = "Settings"
 
-[node name="Button" type="Button" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=10115037]
+[node name="ExitButton" type="Button" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=10115037]
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
 size_flags_horizontal = 10
@@ -61,7 +61,7 @@ layout_mode = 2
 layout_mode = 2
 current_tab = 0
 
-[node name="DisplaySetting" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/TabContainer" unique_id=1095961698 instance=ExtResource("2_p8nej")]
+[node name="Display" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/TabContainer" unique_id=1095961698 instance=ExtResource("2_p8nej")]
 layout_mode = 2
 metadata/_tab_index = 0
 

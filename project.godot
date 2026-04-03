@@ -19,6 +19,10 @@ config/icon="res://icon.svg"
 
 Game="*uid://b3n0447tjq3j2"
 
+[display]
+
+window/size/mode=1
+
 [editor]
 
 movie_writer/movie_file="/home/lefodeurcou/Dev/Godot/Lab/Video/ProjectCaptures/Capture3.avi"

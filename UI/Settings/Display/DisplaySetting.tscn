@@ -1,6 +1,9 @@
 [gd_scene format=3 uid="uid://7ifewxwc5we3"]
 
-[node name="DisplaySetting" type="VBoxContainer" unique_id=1095961698]
+[ext_resource type="Script" uid="uid://b3kq56u5jkfx2" path="res://UI/Settings/Display/DisplaySetting.gd" id="1_04i12"]
+
+[node name="DisplaySettings" type="VBoxContainer" unique_id=1095961698]
+script = ExtResource("1_04i12")
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=649254496]
 layout_mode = 2

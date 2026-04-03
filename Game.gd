@@ -1,21 +1,28 @@
 extends Node
 
 # Game.gd (AutoLoad)
-var isDebug = false
+# Player
 var player: Player
+# UI
+var contextUi: ContextUI
+# Effects
+var screenTransition: ScreenTransition
+# States
+var gameState: GameState
+var isDebug = false
+var timer: Timer
 var loadedWorlds: Dictionary = {} # Resource -> Node
 var currentWorld: World
-var contextUi: ContextUI
-var screenTransition: ScreenTransition
 
 # Game rules
 var maxWorldCacheTimeBeforReset: int = 8 * 60 * 1000 # (8 minutes * 60 seconds * 1000 ms)
 
 func _ready() -> void:
+	gameState = GameState.new()
 	contextUi = ContextUI.new()
 	self.add_child(contextUi)
 	contextUi.loadOutGameMainMenu()
-	var timer = Timer.new()
+	timer = Timer.new()
 	timer.wait_time = 5.0
 	timer.autostart = true
 	timer.one_shot = false
@@ -120,3 +127,7 @@ func quitRun() -> void:
 	player.queue_free()
 	cleanupWorlds(0)
 	await screenTransition.fade_in()
+
+func applySettings(newGameState: GameState) -> void:
+	gameState = newGameState
+	gameState.apply()
