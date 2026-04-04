@@ -34,6 +34,7 @@ func _ready() -> void:
 func loadNewGame() -> void:
 	contextUi.resetUI()
 	contextUi.loadInGameMainMenu()
+	gameState.apply() # TODO see why we need to reaply settings here
 	spawnPlayer()
 	changeWorld(
 		"res://World/Static/MainWorld.tscn"
@@ -123,6 +124,7 @@ func quitRun() -> void:
 	await screenTransition.fade_out()
 	contextUi.resetUI()
 	contextUi.loadOutGameMainMenu()
+	gameState.apply() # TODO see why we need to reaply settings here
 	remove_child(player)
 	player.queue_free()
 	cleanupWorlds(0)
