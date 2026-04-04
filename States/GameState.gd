@@ -12,13 +12,26 @@ const ALL_RESOLUTIONS = [
 	ResolutionType.FULL_SCREEN
 ]
 
-var currentResolution: ResolutionType
+enum Languages {
+	EN = 0,
+	FR = 1
+}
 
-func _ready():
+const ALL_LANGUAGES = {
+	Languages.EN: 'en',
+	Languages.FR: 'fr'
+}
+
+var currentResolution: ResolutionType
+var currentLanguage: String
+
+func _init():
 	defaultStates() # TODO : here to load player settings if they exist from files
 
 func defaultStates() -> void:
 	currentResolution = ResolutionType.DEFAULT
+	currentLanguage = ALL_LANGUAGES[Languages.EN]
+	TranslationServer.set_locale(currentLanguage)
 
 func clone() -> GameState:
 	var c = GameState.new()
@@ -34,13 +47,17 @@ func apply() -> void:
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 		ResolutionType.FULL_SCREEN:
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	TranslationServer.set_locale(currentLanguage)
+	Game.get_tree().call_group("UI", "refreshLocalization")
 
 # Dictionary for maintainance
 
 func toDict() -> Dictionary:
 	return {
-		"currentResolution": currentResolution
+		"currentResolution": currentResolution,
+		"currentLanguage": currentLanguage
 	}
 
 func fromDict(data: Dictionary) -> void:
 	currentResolution = data.get("currentResolution", ResolutionType.DEFAULT)
+	currentLanguage = data.get("currentLanguage", ALL_LANGUAGES[Languages.EN])

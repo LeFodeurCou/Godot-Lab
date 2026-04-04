@@ -12,15 +12,36 @@ theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=1767902670]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=760307189]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="MarginContainer/HBoxContainer" unique_id=789945248]
+[node name="Language" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=479981040]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/Language" unique_id=1952927416]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Language"
+
+[node name="OptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/Language" unique_id=770698614]
+layout_mode = 2
+size_flags_horizontal = 0
+selected = 0
+item_count = 2
+popup/item_0/text = "English"
+popup/item_0/id = 0
+popup/item_1/text = "Français"
+popup/item_1/id = 1
+
+[node name="Resolution" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1767902670]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/Resolution" unique_id=789945248]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Resolution : "
 
-[node name="OptionButton" type="OptionButton" parent="MarginContainer/HBoxContainer" unique_id=1196292285]
+[node name="OptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/Resolution" unique_id=1196292285]
 layout_mode = 2
 size_flags_horizontal = 0
 selected = 0

@@ -6,6 +6,7 @@ signal localStateChanged
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	add_to_group("UI")
 	refreshLocalization()
 	localGameState = Game.gameState.clone()
 	find_child('ExitButton').pressed.connect(requestClose)
@@ -18,10 +19,12 @@ func _ready() -> void:
 	cancelButton.set_meta("baseModulate", cancelButton.modulate)
 	var displayNode = find_child('Display')
 	displayNode.resolutionChanged.connect(_changeResolution)
+	displayNode.languageChanged.connect(_changeLanguage)
 	localStateChanged.connect(displayNode.updateDisplay)
 
 func _applySettings() -> void:
 	Game.applySettings(localGameState.clone())
+	localGameState = Game.gameState.clone()
 	_updateButtonsState()
 
 func _resetDefaultSettings() -> void:
@@ -36,6 +39,10 @@ func _cancel():
 
 func _changeResolution(index: int) -> void:
 	localGameState.currentResolution = Game.gameState.ALL_RESOLUTIONS[index]
+	_updateButtonsState()
+
+func _changeLanguage(index: int) -> void:
+	localGameState.currentLanguage = Game.gameState.ALL_LANGUAGES[index]
 	_updateButtonsState()
 
 func _updateButtonsState() -> void:
@@ -59,7 +66,7 @@ func refreshLocalization() -> void:
 			#"Controls":
 				#tabs.set_tab_title(i, tr("settings.controls"))
 	
-	find_child('PanelName').text = tr('outGameMainMenu.settings')
+	find_child('PanelName').text = tr('settings')
 	find_child('ApplyButton').text = tr('settings.apply')
 	find_child('ResetButton').text = tr('settings.reset')
 	find_child('CancelButton').text = tr('global.cancel')

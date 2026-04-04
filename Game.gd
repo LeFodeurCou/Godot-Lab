@@ -18,9 +18,9 @@ var currentWorld: World
 var maxWorldCacheTimeBeforReset: int = 8 * 60 * 1000 # (8 minutes * 60 seconds * 1000 ms)
 
 func _ready() -> void:
-	gameState = GameState.new()
+	gameState = GameState.new()	
 	contextUi = ContextUI.new()
-	self.add_child(contextUi)
+	add_child(contextUi)
 	contextUi.loadOutGameMainMenu()
 	timer = Timer.new()
 	timer.wait_time = 5.0

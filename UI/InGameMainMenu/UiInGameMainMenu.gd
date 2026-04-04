@@ -11,6 +11,7 @@ var subMenus = {
 var uiSettingsPanel: UiBase
 
 func _ready() -> void:
+	add_to_group("UI")
 	refreshLocalization()
 	visible = false
 	process_mode = Node.PROCESS_MODE_ALWAYS
