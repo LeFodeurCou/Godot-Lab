@@ -6,7 +6,7 @@ signal localStateChanged
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	add_to_group("UI")
+	add_to_group(Constants.GROUP_UI)
 	refreshLocalization()
 	localGameState = Game.gameState.clone()
 	find_child('ExitButton').pressed.connect(requestClose)

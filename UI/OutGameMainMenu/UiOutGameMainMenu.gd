@@ -10,7 +10,7 @@ var uiSettingsPanel: UiBase
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	add_to_group("UI")
+	add_to_group(Constants.GROUP_UI)
 	refreshLocalization()
 	$ColorRect/VBoxContainer/NewGameButton.pressed.connect(_onNewGamePressed)
 	$ColorRect/VBoxContainer/SettingsButton.pressed.connect(_onSettingsPressed)

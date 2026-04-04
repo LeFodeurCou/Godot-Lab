@@ -5,7 +5,7 @@ signal languageChanged
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	add_to_group("UI")
+	add_to_group(Constants.GROUP_UI)
 	refreshLocalization()
 	updateDisplay(Game.gameState)
 	$MarginContainer/VBoxContainer/Resolution/OptionButton.item_selected.connect(_changeResolutionSetting)

@@ -48,7 +48,7 @@ func apply() -> void:
 		ResolutionType.FULL_SCREEN:
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	TranslationServer.set_locale(currentLanguage)
-	Game.get_tree().call_group("UI", "refreshLocalization")
+	Game.get_tree().call_group(Constants.GROUP_UI, "refreshLocalization")
 
 # Dictionary for maintainance
 
