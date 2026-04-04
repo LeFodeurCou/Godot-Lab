@@ -43,7 +43,7 @@ layout_mode = 2
 [node name="Header" type="HBoxContainer" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer" unique_id=1925140982]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=1760887397]
+[node name="PanelName" type="Label" parent="MarginContainer/ColorRect/PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=1760887397]
 layout_mode = 2
 text = "Settings"
 

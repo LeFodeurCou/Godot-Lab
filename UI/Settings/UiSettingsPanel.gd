@@ -6,6 +6,7 @@ signal localStateChanged
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	refreshLocalization()
 	localGameState = Game.gameState.clone()
 	find_child('ExitButton').pressed.connect(requestClose)
 	var applyButton = find_child('ApplyButton')
@@ -46,3 +47,19 @@ func _updateButtonsState() -> void:
 func _setButtonActive(button: Button, active: bool, color: Color) -> void:
 	var base = button.get_meta("baseModulate")
 	button.modulate = color if active else base
+
+func refreshLocalization() -> void:
+	var tabs = find_child('TabContainer')
+	for i in tabs.get_tab_count():
+		match tabs.get_child(i).name:
+			"Display":
+				tabs.set_tab_title(i, tr('settings.display'))
+			#"Audio": # TODO for later
+				#tabs.set_tab_title(i, tr("settings.audio"))
+			#"Controls":
+				#tabs.set_tab_title(i, tr("settings.controls"))
+	
+	find_child('PanelName').text = tr('outGameMainMenu.settings')
+	find_child('ApplyButton').text = tr('settings.apply')
+	find_child('ResetButton').text = tr('settings.reset')
+	find_child('CancelButton').text = tr('global.cancel')

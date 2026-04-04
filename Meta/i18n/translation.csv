@@ -1,0 +1,18 @@
+key,en,fr
+global.cancel,Cancel,Annuler
+global.ok,OK,OK
+global.confirmationTitle,Please confirm...,Veuillez confirmer...
+global.exitGame,Exit Game,Quitter le jeu
+outGameMainMenu.newGame,New Game,Nouvelle Partie
+outGameMainMenu.exitGame.confirmation,Are you sure you want to exit ?,Êtes vous sûr de vouloir quitter ?
+settings,Settings,Paramètres
+settings.display,Display,Affichage
+settings.display.resolution,Resolution,Résolution
+settings.display.resolution.default,Default,Défaut
+settings.display.resolution.fullScreen,Full screen,Plein écran
+settings.apply,Apply,Appliquer
+settings.reset,Reset,Réinitialiser
+inGameMainMenu.resume,Resume,Reprendre
+inGameMainMenu.exitToOutGameMainMenu,Exit to menu,Quitter vers le menu
+inGameMainMenu.exitToOutGameMainMenu.confirmation,Exit to menu - Unsaved progress will be lost.,Quitter vers le menu - Toute progression non sauvergardée sera perdue
+inGameMainMenu.exitGame.confirmation,Back to desktop - Unsaved progress will be lost.,Retour au bureau - Toute progression non sauvergardée sera perdue

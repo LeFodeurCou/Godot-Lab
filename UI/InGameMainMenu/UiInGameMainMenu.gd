@@ -11,6 +11,7 @@ var subMenus = {
 var uiSettingsPanel: UiBase
 
 func _ready() -> void:
+	refreshLocalization()
 	visible = false
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	$VBoxContainer/ResumeButton.pressed.connect(_onResumePressed)
@@ -79,3 +80,17 @@ func outAnimation() -> Signal:
 		.set_trans(Tween.TRANS_CUBIC)\
 		.set_ease(Tween.EASE_OUT)
 	return tween.finished
+
+func refreshLocalization() -> void:
+	$VBoxContainer/ResumeButton.text = tr('inGameMainMenu.resume')
+	$VBoxContainer/SettingsButton.text = tr('settings')
+	$VBoxContainer/ExitToOutGameMainMenu.text = tr('inGameMainMenu.exitToOutGameMainMenu')
+	$ExitRunConfirmationDialog.title = tr('global.confirmationTitle')
+	$ExitRunConfirmationDialog.dialog_text = tr('inGameMainMenu.exitToOutGameMainMenu.confirmation')
+	$ExitRunConfirmationDialog.ok_button_text = tr('global.ok')
+	$ExitRunConfirmationDialog.cancel_button_text = tr('global.cancel')
+	$VBoxContainer/ExitButton.text = tr('global.exitGame')
+	$ExitGameConfirmationDialog.title = tr('global.confirmationTitle')
+	$ExitGameConfirmationDialog.dialog_text = tr('inGameMainMenu.exitGame.confirmation')
+	$ExitGameConfirmationDialog.ok_button_text = tr('global.ok')
+	$ExitGameConfirmationDialog.cancel_button_text = tr('global.cancel')
