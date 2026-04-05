@@ -25,13 +25,9 @@ const ALL_LANGUAGES = {
 var currentResolution: ResolutionType
 var currentLanguage: String
 
-func _init():
-	defaultStates() # TODO : here to load player settings if they exist from files
-
 func defaultStates() -> void:
 	currentResolution = ResolutionType.DEFAULT
 	currentLanguage = ALL_LANGUAGES[Languages.EN]
-	TranslationServer.set_locale(currentLanguage)
 
 func clone() -> GameState:
 	var c = GameState.new()

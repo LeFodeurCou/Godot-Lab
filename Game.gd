@@ -19,6 +19,8 @@ var maxWorldCacheTimeBeforReset: int = 8 * 60 * 1000 # (8 minutes * 60 seconds *
 
 func _ready() -> void:
 	gameState = GameState.new()	
+	gameState.defaultStates()
+	gameState.apply()
 	contextUi = ContextUI.new()
 	add_child(contextUi)
 	contextUi.loadOutGameMainMenu()
@@ -34,7 +36,6 @@ func _ready() -> void:
 func loadNewGame() -> void:
 	contextUi.resetUI()
 	contextUi.loadInGameMainMenu()
-	gameState.apply() # TODO see why we need to reaply settings here
 	spawnPlayer()
 	changeWorld(
 		"res://World/Static/MainWorld.tscn"
@@ -124,12 +125,11 @@ func quitRun() -> void:
 	await screenTransition.fade_out()
 	contextUi.resetUI()
 	contextUi.loadOutGameMainMenu()
-	gameState.apply() # TODO see why we need to reaply settings here
 	remove_child(player)
 	player.queue_free()
 	cleanupWorlds(0)
 	await screenTransition.fade_in()
 
 func applySettings(newGameState: GameState) -> void:
-	gameState = newGameState
+	gameState.fromDict(newGameState.toDict())
 	gameState.apply()

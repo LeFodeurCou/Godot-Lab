@@ -20,7 +20,11 @@ func _changeLanguageSetting(index: int) -> void:
 func updateDisplay(state: GameState) -> void:
 	var index = Game.gameState.ALL_RESOLUTIONS.find(state.currentResolution)
 	$MarginContainer/VBoxContainer/Resolution/OptionButton.select(index)
-	index = Game.gameState.ALL_LANGUAGES.find_key(state.currentLanguage)
+	index = 0
+	for i in Game.gameState.ALL_LANGUAGES.keys():
+		if Game.gameState.ALL_LANGUAGES[i] == state.currentLanguage:
+			index = i
+			break
 	$MarginContainer/VBoxContainer/Language/OptionButton.select(index)
 	
 func refreshLocalization() -> void:
